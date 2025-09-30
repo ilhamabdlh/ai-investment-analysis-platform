@@ -158,65 +158,64 @@ export function HighLevelAnalysis() {
       </Card>
 
       {/* Analysis Tabs */}
-      <Tabs defaultValue="metrics" className="space-y-6">
+      <Tabs defaultValue="insights" className="space-y-6">
         <TabsList className="grid grid-cols-4 w-full">
-          <TabsTrigger value="metrics">Key Metrics</TabsTrigger>
-          <TabsTrigger value="risks">Risk Analysis</TabsTrigger>
+          <TabsTrigger value="insights">Key Findings</TabsTrigger>
+          <TabsTrigger value="risks">Risk Factors</TabsTrigger>
           <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
-          <TabsTrigger value="insights">AI Insights</TabsTrigger>
+          <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="metrics" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {(highLevelAnalysis?.metrics || []).map((metric: any, index: number) => (
-              <Card key={index}>
-                <CardHeader>
+        <TabsContent value="insights">
+          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border-blue-200/50 dark:border-blue-700/50">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Sparkles className="h-5 w-5 text-blue-500" />
+                <span>Key Findings</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {(highLevelAnalysis?.key_findings || []).length === 0 && (
+                <p className="text-sm text-muted-foreground">No key findings available</p>
+              )}
+              {(highLevelAnalysis?.key_findings || []).map((finding: any, index: number) => (
+                <div key={index} className="flex items-start space-x-3 p-4 bg-white/50 dark:bg-black/20 rounded-lg">
+                  <CheckCircle className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm">{typeof finding === 'string' ? finding : (finding?.text || finding?.description || JSON.stringify(finding))}</p>
+                </div>
+              ))}
+              {highLevelAnalysis && (
+                <div className="pt-4 border-t border-blue-200/50 dark:border-blue-700/50">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{metric.category}</CardTitle>
-                    <div className="flex items-center space-x-2">
-                      <div className="text-2xl font-bold">{metric.score ?? 0}</div>
-                      <div className={`flex items-center space-x-1 ${
-                        metric.trend === 'up' ? 'text-green-600' : 
-                        metric.trend === 'down' ? 'text-red-600' : 'text-muted-foreground'
-                      }`}>
-                        {metric.trend === 'up' && <ArrowUpRight className="h-4 w-4" />}
-                        {metric.trend === 'down' && <ArrowDownRight className="h-4 w-4" />}
-                        {metric.trend === 'stable' && <Activity className="h-4 w-4" />}
-                        {metric.change_percentage != null && (
-                          <span className="text-sm">{metric.change_percentage > 0 ? `+${metric.change_percentage}%` : `${metric.change_percentage}%`}</span>
-                        )}
-                      </div>
+                    <div className="text-sm text-blue-600 dark:text-blue-300">
+                      Analysis confidence: <strong>{Math.round(((highLevelAnalysis?.confidence_score ?? 0) * 100))}%</strong>
+                    </div>
+                    <div className="text-sm text-blue-600 dark:text-blue-300">
+                      Overall Score: <strong>{highLevelAnalysis?.overall_score ?? 0}/100</strong>
                     </div>
                   </div>
-                  <Progress value={metric.score ?? 0} className="h-2" />
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">{metric.name}</span>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium">{metric.value}</span>
-                      {metric.score != null && <CheckCircle className="h-4 w-4 text-green-500" />}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="risks" className="space-y-4">
+          {(highLevelAnalysis?.risk_factors || []).length === 0 && (
+            <Card>
+              <CardContent className="p-6 text-center text-muted-foreground">
+                No risk factors identified
+              </CardContent>
+            </Card>
+          )}
           {(highLevelAnalysis?.risk_factors || []).map((risk: any, index: number) => (
             <Card key={index} className="border-l-4 border-l-red-500">
               <CardContent className="p-6">
                 <div className="flex items-start space-x-4">
-                  <div className={`px-2 py-1 rounded text-xs font-medium ${
-                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                  }`}>
-                    Risk
-                  </div>
+                  <AlertTriangle className="h-6 w-6 text-red-500 flex-shrink-0 mt-1" />
                   <div className="flex-1">
-                    <h3 className="font-semibold mb-2">{risk.title || risk.name || 'Risk'}</h3>
-                    <p className="text-muted-foreground text-sm mb-2">{risk.description || String(risk)}</p>
+                    <h3 className="font-semibold mb-2">{typeof risk === 'string' ? 'Risk Factor' : (risk.title || risk.name || 'Risk Factor')}</h3>
+                    <p className="text-muted-foreground text-sm">{typeof risk === 'string' ? risk : (risk.description || String(risk))}</p>
                   </div>
                 </div>
               </CardContent>
@@ -225,14 +224,21 @@ export function HighLevelAnalysis() {
         </TabsContent>
 
         <TabsContent value="opportunities" className="space-y-4">
+          {(highLevelAnalysis?.opportunities || []).length === 0 && (
+            <Card>
+              <CardContent className="p-6 text-center text-muted-foreground">
+                No opportunities identified
+              </CardContent>
+            </Card>
+          )}
           {(highLevelAnalysis?.opportunities || []).map((opportunity: any, index: number) => (
             <Card key={index} className="border-l-4 border-l-green-500">
               <CardContent className="p-6">
                 <div className="flex items-start space-x-4">
                   <TrendingUp className="h-6 w-6 text-green-600 flex-shrink-0 mt-1" />
                   <div className="flex-1">
-                    <h3 className="font-semibold mb-2">{opportunity.title || opportunity.name || 'Opportunity'}</h3>
-                    <p className="text-muted-foreground text-sm mb-2">{opportunity.description || String(opportunity)}</p>
+                    <h3 className="font-semibold mb-2">{typeof opportunity === 'string' ? 'Opportunity' : (opportunity.title || opportunity.name || 'Opportunity')}</h3>
+                    <p className="text-muted-foreground text-sm">{typeof opportunity === 'string' ? opportunity : (opportunity.description || String(opportunity))}</p>
                   </div>
                 </div>
               </CardContent>
@@ -240,33 +246,27 @@ export function HighLevelAnalysis() {
           ))}
         </TabsContent>
 
-        <TabsContent value="insights">
-          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border-blue-200/50 dark:border-blue-700/50">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Sparkles className="h-5 w-5 text-blue-500" />
-                <span>AI-Generated Insights</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {(highLevelAnalysis?.key_findings || []).map((insight: any, index: number) => (
-                <div key={index} className="flex items-start space-x-3 p-4 bg-white/50 dark:bg-black/20 rounded-lg">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm text-blue-800 dark:text-blue-200">{typeof insight === 'string' ? insight : (insight?.text || JSON.stringify(insight))}</p>
-                </div>
-              ))}
-              <div className="pt-4 border-t border-blue-200/50 dark:border-blue-700/50">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-blue-600 dark:text-blue-300">
-                    Analysis confidence: <strong>{Math.round(((highLevelAnalysis?.confidence_score ?? 0) * 100))}%</strong>
+        <TabsContent value="recommendations" className="space-y-4">
+          {(highLevelAnalysis?.recommendations || []).length === 0 && (
+            <Card>
+              <CardContent className="p-6 text-center text-muted-foreground">
+                No recommendations available
+              </CardContent>
+            </Card>
+          )}
+          {(highLevelAnalysis?.recommendations || []).map((recommendation: any, index: number) => (
+            <Card key={index} className="border-l-4 border-l-blue-500">
+              <CardContent className="p-6">
+                <div className="flex items-start space-x-4">
+                  <CheckCircle className="h-6 w-6 text-blue-600 flex-shrink-0 mt-1" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold mb-2">{typeof recommendation === 'string' ? 'Recommendation' : (recommendation.title || recommendation.name || 'Recommendation')}</h3>
+                    <p className="text-muted-foreground text-sm">{typeof recommendation === 'string' ? recommendation : (recommendation.description || String(recommendation))}</p>
                   </div>
-                  <Button variant="outline" size="sm" className="border-blue-300 text-blue-700 hover:bg-blue-50">
-                    Export Report
-                  </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ))}
         </TabsContent>
       </Tabs>
     </div>

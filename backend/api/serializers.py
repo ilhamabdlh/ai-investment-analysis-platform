@@ -4,7 +4,8 @@ from .models import (
     Company, CompanyTag, Metric, Lead, Investment, UserProfile,
     HighLevelAnalysis, PerceptionAnalysis, MarketAnalysis, 
     KeyIndividualsAnalysis, CompetitiveAnalysis,
-    KeyIndividual, IndividualRisk, PublicMention, Competitor, StrategicRecommendation
+    KeyIndividual, IndividualRisk, PublicMention, Competitor, StrategicRecommendation,
+    SentimentBySource, CompetitorSentiment, RecentMention, KeyTopic, BrandMetric, RiskAlert
 )
 
 class CompanyTagSerializer(serializers.ModelSerializer):
@@ -83,6 +84,71 @@ class StrategicRecommendationSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
+class SentimentBySourceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SentimentBySource
+        fields = [
+            'id', 'source_name', 'positive_percentage', 'mentions_count',
+            'sentiment_label', 'change_vs_previous', 'display_order',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+class CompetitorSentimentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompetitorSentiment
+        fields = [
+            'id', 'company_name', 'positive_percentage', 'mentions_count',
+            'is_current_company', 'display_order', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+class RecentMentionSerializer(serializers.ModelSerializer):
+    date_display = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = RecentMention
+        fields = [
+            'id', 'title', 'source', 'date', 'date_display', 'url', 'excerpt',
+            'reach', 'engagement_level', 'sentiment_label', 'sentiment_score',
+            'display_order', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'date_display', 'created_at', 'updated_at']
+
+class KeyTopicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = KeyTopic
+        fields = [
+            'id', 'topic_name', 'sentiment_score', 'mentions_count', 'trend',
+            'description', 'display_order', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+class BrandMetricSerializer(serializers.ModelSerializer):
+    benchmark_difference = serializers.ReadOnlyField()
+    is_above_benchmark = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = BrandMetric
+        fields = [
+            'id', 'metric_name', 'current_score', 'industry_benchmark', 
+            'benchmark_difference', 'is_above_benchmark', 'trend',
+            'description', 'display_order', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'benchmark_difference', 'is_above_benchmark', 'created_at', 'updated_at']
+
+class RiskAlertSerializer(serializers.ModelSerializer):
+    border_color = serializers.ReadOnlyField()
+    icon_color = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = RiskAlert
+        fields = [
+            'id', 'title', 'priority', 'description', 'impact', 'recommendation',
+            'border_color', 'icon_color', 'display_order', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'border_color', 'icon_color', 'created_at', 'updated_at']
+
 # Base analysis serializer
 class BaseAnalysisSerializer(serializers.ModelSerializer):
     analyst_name = serializers.CharField(source='analyst.username', read_only=True)
@@ -105,10 +171,19 @@ class HighLevelAnalysisSerializer(BaseAnalysisSerializer):
         ]
 
 class PerceptionAnalysisSerializer(BaseAnalysisSerializer):
+    sentiment_sources = SentimentBySourceSerializer(many=True, read_only=True)
+    competitor_sentiments = CompetitorSentimentSerializer(many=True, read_only=True)
+    recent_mentions = RecentMentionSerializer(many=True, read_only=True)
+    key_topics = KeyTopicSerializer(many=True, read_only=True)
+    brand_metrics = BrandMetricSerializer(many=True, read_only=True)
+    risk_alerts = RiskAlertSerializer(many=True, read_only=True)
+    
     class Meta(BaseAnalysisSerializer.Meta):
         model = PerceptionAnalysis
         fields = BaseAnalysisSerializer.Meta.fields + [
-            'sentiment_score', 'media_coverage', 'social_sentiment', 'brand_perception'
+            'sentiment_score', 'sentiment_sources', 'competitor_sentiments', 'recent_mentions', 
+            'key_topics', 'brand_metrics', 'risk_alerts', 
+            'social_sentiment', 'brand_perception', 'risk_factors'
         ]
 
 class MarketAnalysisSerializer(BaseAnalysisSerializer):

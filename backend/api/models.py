@@ -260,14 +260,395 @@ class PerceptionAnalysis(Analysis):
         null=True, blank=True,
         help_text="Overall sentiment score (0-100)"
     )
-    media_coverage = models.JSONField(default=list, help_text="Media coverage analysis")
-    social_sentiment = models.JSONField(default=dict, help_text="Social media sentiment data")
-    brand_perception = models.JSONField(default=list, help_text="Brand perception insights")
+    
+    # Legacy JSON fields (deprecated - use structured models below)
+    social_sentiment = models.JSONField(
+        default=list, 
+        blank=True,
+        help_text='DEPRECATED: Use structured models instead. Array of key topics with sentiment'
+    )
+    brand_perception = models.JSONField(
+        default=list, 
+        blank=True,
+        help_text='DEPRECATED: Use structured models instead. Array of brand metrics'
+    )
+    risk_factors = models.JSONField(
+        default=list, 
+        blank=True,
+        help_text='DEPRECATED: Use structured models instead. Array of risk alerts'
+    )
     
     class Meta:
         verbose_name = "Perception Analysis"
         verbose_name_plural = "Perception Analyses"
         ordering = ['-created_at']
+
+
+# Structured models for Perception Analysis
+
+class SentimentBySource(models.Model):
+    """Sentiment breakdown by source (e.g., News Media, Social Media, etc.)"""
+    
+    analysis = models.ForeignKey(PerceptionAnalysis, on_delete=models.CASCADE, related_name='sentiment_sources')
+    
+    # Source information
+    source_name = models.CharField(max_length=255, help_text="Source name (e.g., 'News Media', 'Social Media')")
+    
+    # Sentiment metrics
+    positive_percentage = models.IntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Percentage of mentions that are positive (0-100)"
+    )
+    mentions_count = models.IntegerField(
+        validators=[MinValueValidator(0)],
+        help_text="Total number of mentions from this source"
+    )
+    
+    # Additional context
+    sentiment_label = models.CharField(
+        max_length=50, 
+        blank=True,
+        help_text="Human-readable sentiment label (e.g., 'Positive', 'Neutral-Positive')"
+    )
+    change_vs_previous = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Change indicator (e.g., '+12% vs last month')"
+    )
+    
+    # Ordering
+    display_order = models.IntegerField(default=0, help_text="Order in which to display sources")
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['display_order', '-positive_percentage', 'source_name']
+        verbose_name = "Sentiment by Source"
+        verbose_name_plural = "Sentiment by Sources"
+    
+    def __str__(self):
+        return f"{self.source_name}: {self.positive_percentage}% positive ({self.mentions_count} mentions)"
+
+
+class CompetitorSentiment(models.Model):
+    """Competitor sentiment comparison data"""
+    
+    analysis = models.ForeignKey(PerceptionAnalysis, on_delete=models.CASCADE, related_name='competitor_sentiments')
+    
+    # Competitor information
+    company_name = models.CharField(max_length=255, help_text="Competitor company name")
+    
+    # Sentiment metrics
+    positive_percentage = models.IntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Percentage of mentions that are positive (0-100)"
+    )
+    mentions_count = models.IntegerField(
+        validators=[MinValueValidator(0)],
+        help_text="Total number of mentions"
+    )
+    
+    # Highlighting
+    is_current_company = models.BooleanField(
+        default=False,
+        help_text="Is this the company being analyzed (for highlighting)"
+    )
+    
+    # Ordering
+    display_order = models.IntegerField(default=0, help_text="Order in which to display competitors")
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['display_order', '-positive_percentage', 'company_name']
+        verbose_name = "Competitor Sentiment"
+        verbose_name_plural = "Competitor Sentiments"
+    
+    def __str__(self):
+        marker = " (Current)" if self.is_current_company else ""
+        return f"{self.company_name}{marker}: {self.positive_percentage}% positive ({self.mentions_count} mentions)"
+
+
+class RecentMention(models.Model):
+    """Recent media mentions, news articles, and social media posts about the company"""
+    
+    ENGAGEMENT_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('very_high', 'Very High'),
+    ]
+    
+    analysis = models.ForeignKey(PerceptionAnalysis, on_delete=models.CASCADE, related_name='recent_mentions')
+    
+    # Mention details
+    title = models.CharField(max_length=500, help_text="Title of the article/mention")
+    source = models.CharField(max_length=255, help_text="Source (e.g., 'TechCrunch', 'LinkedIn', 'Twitter')")
+    date = models.DateField(help_text="Publication date")
+    url = models.URLField(blank=True, help_text="Link to the original article/post")
+    
+    # Content
+    excerpt = models.TextField(help_text="Brief excerpt or summary of the mention")
+    
+    # Engagement metrics
+    reach = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Reach metric (e.g., '2.3M', '156K')"
+    )
+    engagement_level = models.CharField(
+        max_length=20,
+        choices=ENGAGEMENT_CHOICES,
+        default='medium',
+        help_text="Engagement level"
+    )
+    
+    # Sentiment analysis
+    sentiment_label = models.CharField(
+        max_length=50,
+        help_text="Sentiment label (e.g., 'Positive', 'Very Positive', 'Neutral-Positive')"
+    )
+    sentiment_score = models.IntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Sentiment score (0-100)"
+    )
+    
+    # Ordering
+    display_order = models.IntegerField(default=0, help_text="Order in which to display mentions")
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['display_order', '-date', '-sentiment_score']
+        verbose_name = "Recent Mention"
+        verbose_name_plural = "Recent Mentions"
+    
+    def __str__(self):
+        return f"{self.title} - {self.source} ({self.sentiment_label})"
+    
+    @property
+    def date_display(self):
+        """Return a human-readable date (e.g., '2 days ago')"""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        today = timezone.now().date()
+        delta = today - self.date
+        
+        if delta.days == 0:
+            return "Today"
+        elif delta.days == 1:
+            return "Yesterday"
+        elif delta.days < 7:
+            return f"{delta.days} days ago"
+        elif delta.days < 30:
+            weeks = delta.days // 7
+            return f"{weeks} week{'s' if weeks > 1 else ''} ago"
+        elif delta.days < 365:
+            months = delta.days // 30
+            return f"{months} month{'s' if months > 1 else ''} ago"
+        else:
+            return self.date.strftime("%b %d, %Y")
+
+
+class KeyTopic(models.Model):
+    """Key topics being discussed about the company (e.g., Innovation, Leadership, Product Quality)"""
+    
+    TREND_CHOICES = [
+        ('up', 'Trending Up'),
+        ('down', 'Trending Down'),
+        ('stable', 'Stable'),
+    ]
+    
+    analysis = models.ForeignKey(PerceptionAnalysis, on_delete=models.CASCADE, related_name='key_topics')
+    
+    # Topic details
+    topic_name = models.CharField(max_length=255, help_text="Topic name (e.g., 'Innovation', 'Leadership', 'Product Quality')")
+    
+    # Sentiment metrics
+    sentiment_score = models.IntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Sentiment score for this topic (0-100)"
+    )
+    mentions_count = models.IntegerField(
+        validators=[MinValueValidator(0)],
+        help_text="Number of mentions for this topic"
+    )
+    
+    # Trend indicator
+    trend = models.CharField(
+        max_length=10,
+        choices=TREND_CHOICES,
+        default='stable',
+        help_text="Trend direction"
+    )
+    
+    # Optional description
+    description = models.TextField(
+        blank=True,
+        help_text="Optional description or context about this topic"
+    )
+    
+    # Ordering
+    display_order = models.IntegerField(default=0, help_text="Order in which to display topics")
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['display_order', '-sentiment_score', 'topic_name']
+        verbose_name = "Key Topic"
+        verbose_name_plural = "Key Topics"
+    
+    def __str__(self):
+        trend_icon = "↑" if self.trend == "up" else "↓" if self.trend == "down" else "→"
+        return f"{self.topic_name}: {self.sentiment_score}% ({self.mentions_count} mentions) {trend_icon}"
+
+
+class BrandMetric(models.Model):
+    """Brand perception metrics with benchmark comparisons"""
+    
+    TREND_CHOICES = [
+        ('up', 'Trending Up'),
+        ('down', 'Trending Down'),
+        ('stable', 'Stable'),
+    ]
+    
+    analysis = models.ForeignKey(PerceptionAnalysis, on_delete=models.CASCADE, related_name='brand_metrics')
+    
+    # Metric details
+    metric_name = models.CharField(
+        max_length=255, 
+        help_text="Metric name (e.g., 'Brand Awareness', 'Brand Trust', 'Innovation Perception')"
+    )
+    
+    # Score and benchmark
+    current_score = models.IntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Current score for this metric (0-100)"
+    )
+    industry_benchmark = models.IntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Industry benchmark score (0-100)"
+    )
+    
+    # Trend indicator
+    trend = models.CharField(
+        max_length=10,
+        choices=TREND_CHOICES,
+        default='stable',
+        help_text="Trend direction over time"
+    )
+    
+    # Optional description
+    description = models.TextField(
+        blank=True,
+        help_text="Optional description or context about this metric"
+    )
+    
+    # Ordering
+    display_order = models.IntegerField(default=0, help_text="Order in which to display metrics")
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['display_order', '-current_score', 'metric_name']
+        verbose_name = "Brand Metric"
+        verbose_name_plural = "Brand Metrics"
+    
+    def __str__(self):
+        diff = self.current_score - self.industry_benchmark
+        comparison = f"+{diff}" if diff > 0 else str(diff)
+        trend_icon = "↑" if self.trend == "up" else "↓" if self.trend == "down" else "→"
+        return f"{self.metric_name}: {self.current_score} ({comparison} vs benchmark) {trend_icon}"
+    
+    @property
+    def benchmark_difference(self):
+        """Calculate difference from benchmark"""
+        return self.current_score - self.industry_benchmark
+    
+    @property
+    def is_above_benchmark(self):
+        """Check if score is above benchmark"""
+        return self.current_score > self.industry_benchmark
+
+
+class RiskAlert(models.Model):
+    """Risk alerts and concerns about public perception"""
+    
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('critical', 'Critical'),
+    ]
+    
+    analysis = models.ForeignKey(PerceptionAnalysis, on_delete=models.CASCADE, related_name='risk_alerts')
+    
+    # Alert details
+    title = models.CharField(max_length=500, help_text="Risk alert title")
+    
+    # Priority
+    priority = models.CharField(
+        max_length=20,
+        choices=PRIORITY_CHOICES,
+        default='medium',
+        help_text="Risk priority level"
+    )
+    
+    # Description and context
+    description = models.TextField(help_text="Detailed description of the risk")
+    
+    # Impact and recommendation
+    impact = models.TextField(
+        blank=True,
+        help_text="Potential impact if not addressed"
+    )
+    recommendation = models.TextField(
+        blank=True,
+        help_text="Recommended actions to mitigate the risk"
+    )
+    
+    # Ordering
+    display_order = models.IntegerField(default=0, help_text="Order in which to display risk alerts")
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['display_order', '-priority', 'title']
+        verbose_name = "Risk Alert"
+        verbose_name_plural = "Risk Alerts"
+    
+    def __str__(self):
+        priority_display = self.get_priority_display()
+        return f"{self.title} ({priority_display} Priority)"
+    
+    @property
+    def border_color(self):
+        """Get border color based on priority"""
+        colors = {
+            'critical': 'red',
+            'high': 'red',
+            'medium': 'yellow',
+            'low': 'blue',
+        }
+        return colors.get(self.priority, 'yellow')
+    
+    @property
+    def icon_color(self):
+        """Get icon color based on priority"""
+        return self.border_color
 
 
 class MarketAnalysis(Analysis):
