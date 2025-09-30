@@ -8,15 +8,17 @@ import {
   Users, 
   GitCompare,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  LogOut
 } from 'lucide-react'
 
 interface SidebarProps {
   activeView: string
   onViewChange: (view: string) => void
+  onLogout: () => void
 }
 
-export function Sidebar({ activeView, onViewChange }: SidebarProps) {
+export function Sidebar({ activeView, onViewChange, onLogout }: SidebarProps) {
   const menuItems = [
     {
       id: 'dashboard',
@@ -80,7 +82,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
   ]
 
   return (
-    <div className="w-80 bg-card border-r border-border flex flex-col">
+    <div className="w-80 bg-card border-r border-border flex flex-col min-h-0 overflow-y-auto">
       <div className="p-6 border-b border-border">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden">
@@ -97,7 +99,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
         </div>
       </div>
 
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto min-h-0">
         {menuItems.map((item) => {
           if (item.isSection) {
             return (
@@ -151,7 +153,7 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
         })}
       </nav>
 
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border shrink-0">
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg p-4 border border-blue-200/50 dark:border-blue-700/50">
           <div className="flex items-center space-x-2 mb-2">
             <Sparkles className="h-4 w-4 text-blue-600" />
@@ -164,6 +166,18 @@ export function Sidebar({ activeView, onViewChange }: SidebarProps) {
             Ask AI
           </Button>
         </div>
+      </div>
+
+      {/* Logout Button */}
+      <div className="p-4 border-t border-border shrink-0">
+        <Button 
+          variant="ghost" 
+          className="w-full justify-start text-muted-foreground hover:text-foreground"
+          onClick={onLogout}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign Out
+        </Button>
       </div>
     </div>
   )

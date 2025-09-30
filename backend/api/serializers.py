@@ -1,7 +1,10 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import (
-    Company, CompanyTag, Analysis, Metric, Lead, Investment, UserProfile
+    Company, CompanyTag, Metric, Lead, Investment, UserProfile,
+    HighLevelAnalysis, PerceptionAnalysis, MarketAnalysis, 
+    KeyIndividualsAnalysis, CompetitiveAnalysis,
+    KeyIndividual, IndividualRisk, PublicMention, Competitor, StrategicRecommendation
 )
 
 class CompanyTagSerializer(serializers.ModelSerializer):
@@ -42,32 +45,185 @@ class MetricSerializer(serializers.ModelSerializer):
             'id', 'category', 'name', 'value', 'score', 'trend', 'change_percentage'
         ]
 
-class AnalysisSerializer(serializers.ModelSerializer):
-    metrics = MetricSerializer(many=True, read_only=True)
-    analyst_name = serializers.CharField(source='analyst.username', read_only=True)
-    
+class KeyIndividualSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Analysis
+        model = KeyIndividual
         fields = [
-            'id', 'company', 'analysis_type', 'title', 'summary',
-            'key_findings', 'risk_factors', 'opportunities', 'recommendations',
-            'overall_score', 'confidence_score', 'analyst', 'analyst_name',
-            'created_at', 'updated_at', 'is_completed', 'metrics'
+            'id', 'is_board_member', 'name', 'role', 'experience', 'education',
+            'credibility_score', 'public_perception', 'previous_companies',
+            'strengths', 'achievements', 'social_media'
+        ]
+
+class IndividualRiskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IndividualRisk
+        fields = ['id', 'title', 'description']
+
+class PublicMentionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PublicMention
+        fields = ['id', 'title', 'person', 'source', 'date', 'summary', 'sentiment', 'url']
+
+class CompetitorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Competitor
+        fields = [
+            'id', 'name', 'position', 'logo', 'employees', 'headquarters',
+            'founded', 'funding', 'market_share', 'revenue', 'score', 'trend',
+            'strengths', 'weaknesses', 'display_order', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
-class AnalysisListSerializer(serializers.ModelSerializer):
-    """Simplified serializer for analysis lists"""
+class StrategicRecommendationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StrategicRecommendation
+        fields = [
+            'id', 'category', 'priority', 'recommendations', 'description',
+            'display_order', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+# Base analysis serializer
+class BaseAnalysisSerializer(serializers.ModelSerializer):
     analyst_name = serializers.CharField(source='analyst.username', read_only=True)
     company_name = serializers.CharField(source='company.name', read_only=True)
     
     class Meta:
-        model = Analysis
         fields = [
-            'id', 'company', 'company_name', 'analysis_type', 'title',
-            'overall_score', 'confidence_score', 'analyst_name',
-            'created_at', 'is_completed'
+            'id', 'company', 'company_name', 'title', 'summary',
+            'overall_score', 'confidence_score', 'analyst', 'analyst_name',
+            'created_at', 'updated_at', 'is_completed'
         ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+# Specific analysis serializers
+class HighLevelAnalysisSerializer(BaseAnalysisSerializer):
+    class Meta(BaseAnalysisSerializer.Meta):
+        model = HighLevelAnalysis
+        fields = BaseAnalysisSerializer.Meta.fields + [
+            'key_findings', 'risk_factors', 'opportunities', 'recommendations'
+        ]
+
+class PerceptionAnalysisSerializer(BaseAnalysisSerializer):
+    class Meta(BaseAnalysisSerializer.Meta):
+        model = PerceptionAnalysis
+        fields = BaseAnalysisSerializer.Meta.fields + [
+            'sentiment_score', 'media_coverage', 'social_sentiment', 'brand_perception'
+        ]
+
+class MarketAnalysisSerializer(BaseAnalysisSerializer):
+    class Meta(BaseAnalysisSerializer.Meta):
+        model = MarketAnalysis
+        fields = BaseAnalysisSerializer.Meta.fields + [
+            'market_size', 'market_growth_rate', 'competitive_landscape', 
+            'market_trends', 'barriers_to_entry'
+        ]
+
+class KeyIndividualsAnalysisSerializer(BaseAnalysisSerializer):
+    individuals = KeyIndividualSerializer(many=True, read_only=True)
+    individual_risks = IndividualRiskSerializer(many=True, read_only=True)
+    public_mentions = PublicMentionSerializer(many=True, read_only=True)
+    
+    class Meta(BaseAnalysisSerializer.Meta):
+        model = KeyIndividualsAnalysis
+        fields = BaseAnalysisSerializer.Meta.fields + [
+            'team_strength_score', 'leadership_assessment', 'team_strengths',
+            'team_risks', 'team_recommendations', 'individuals', 'individual_risks', 'public_mentions'
+        ]
+
+class CompetitiveAnalysisSerializer(BaseAnalysisSerializer):
+    competitors = CompetitorSerializer(many=True, read_only=True)
+    strategic_recommendation_items = StrategicRecommendationSerializer(many=True, read_only=True)
+    
+    class Meta(BaseAnalysisSerializer.Meta):
+        model = CompetitiveAnalysis
+        fields = BaseAnalysisSerializer.Meta.fields + [
+            'competitive_position', 'competitor_analysis', 'competitors',
+            'swot_strengths', 'swot_weaknesses', 'swot_opportunities', 'swot_threats',
+            'competitive_advantages', 'competitive_threats', 'differentiation_factors',
+            'strategic_recommendations', 'strategic_recommendation_items'
+        ]
+
+# List serializers for each analysis type
+class HighLevelAnalysisListSerializer(serializers.ModelSerializer):
+    analyst_name = serializers.CharField(source='analyst.username', read_only=True)
+    company_name = serializers.CharField(source='company.name', read_only=True)
+    analysis_type = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = HighLevelAnalysis
+        fields = [
+            'id', 'company', 'company_name', 'title',
+            'overall_score', 'confidence_score', 'analyst_name',
+            'created_at', 'is_completed', 'analysis_type'
+        ]
+    
+    def get_analysis_type(self, obj):
+        return 'high-level'
+
+class PerceptionAnalysisListSerializer(serializers.ModelSerializer):
+    analyst_name = serializers.CharField(source='analyst.username', read_only=True)
+    company_name = serializers.CharField(source='company.name', read_only=True)
+    analysis_type = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = PerceptionAnalysis
+        fields = [
+            'id', 'company', 'company_name', 'title',
+            'overall_score', 'confidence_score', 'analyst_name',
+            'created_at', 'is_completed', 'analysis_type'
+        ]
+    
+    def get_analysis_type(self, obj):
+        return 'perception'
+
+class MarketAnalysisListSerializer(serializers.ModelSerializer):
+    analyst_name = serializers.CharField(source='analyst.username', read_only=True)
+    company_name = serializers.CharField(source='company.name', read_only=True)
+    analysis_type = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = MarketAnalysis
+        fields = [
+            'id', 'company', 'company_name', 'title',
+            'overall_score', 'confidence_score', 'analyst_name',
+            'created_at', 'is_completed', 'analysis_type'
+        ]
+    
+    def get_analysis_type(self, obj):
+        return 'market'
+
+class KeyIndividualsAnalysisListSerializer(serializers.ModelSerializer):
+    analyst_name = serializers.CharField(source='analyst.username', read_only=True)
+    company_name = serializers.CharField(source='company.name', read_only=True)
+    analysis_type = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = KeyIndividualsAnalysis
+        fields = [
+            'id', 'company', 'company_name', 'title',
+            'overall_score', 'confidence_score', 'analyst_name',
+            'created_at', 'is_completed', 'analysis_type'
+        ]
+    
+    def get_analysis_type(self, obj):
+        return 'individuals'
+
+class CompetitiveAnalysisListSerializer(serializers.ModelSerializer):
+    analyst_name = serializers.CharField(source='analyst.username', read_only=True)
+    company_name = serializers.CharField(source='company.name', read_only=True)
+    analysis_type = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = CompetitiveAnalysis
+        fields = [
+            'id', 'company', 'company_name', 'title',
+            'overall_score', 'confidence_score', 'analyst_name',
+            'created_at', 'is_completed', 'analysis_type'
+        ]
+    
+    def get_analysis_type(self, obj):
+        return 'competitive'
 
 class LeadSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source='company.name', read_only=True)
@@ -125,7 +281,12 @@ class DashboardStatsSerializer(serializers.Serializer):
 class CompanyAnalysisSerializer(serializers.Serializer):
     """Serializer for comprehensive company analysis"""
     company = CompanySerializer()
-    analyses = AnalysisListSerializer(many=True)
+    # Include all analysis types
+    high_level_analyses = HighLevelAnalysisSerializer(many=True)
+    perception_analyses = PerceptionAnalysisSerializer(many=True)
+    market_analyses = MarketAnalysisSerializer(many=True)
+    key_individuals_analyses = KeyIndividualsAnalysisSerializer(many=True)
+    competitive_analyses = CompetitiveAnalysisSerializer(many=True)
     leads = LeadSerializer(many=True)
     investments = InvestmentSerializer(many=True)
     metrics_summary = serializers.DictField()

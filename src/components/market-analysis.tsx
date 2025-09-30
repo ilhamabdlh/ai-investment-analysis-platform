@@ -1,3 +1,6 @@
+import React, { useEffect, useMemo, useState } from 'react'
+import { useCompany } from '../context/company-context'
+import { apiService } from '../services/api'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
@@ -9,6 +12,7 @@ import {
   BarChart3,
   Target,
   Globe,
+  Calendar,
   Sparkles,
   ArrowUpRight,
   ArrowDownRight,
@@ -20,164 +24,55 @@ import {
 } from 'lucide-react'
 
 export function MarketAnalysis() {
+  const { company } = useCompany()
+  const [analysisData, setAnalysisData] = useState<any | null>(null)
+  const [loading, setLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
+  const lastUpdated = useMemo(() => new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }), [])
+
+  useEffect(() => {
+    let isMounted = true
+    async function fetchData() {
+      if (!company?.id) return
+      setLoading(true)
+      setError(null)
+      try {
+        const resp = await apiService.companies.fullAnalysis(company.id)
+        if (!isMounted) return
+        setAnalysisData(resp.data)
+      } catch (e) {
+        if (!isMounted) return
+        setError('Failed to load analysis')
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+    fetchData()
+    return () => { isMounted = false }
+  }, [company?.id])
+
+  const market = useMemo(() => {
+    return analysisData?.market_analyses?.[0] || null
+  }, [analysisData])
+
+  const companyName = analysisData?.company?.name || '—'
   const marketData = {
-    estimatedRevenue: "$2.8M",
-    revenueGrowth: "+240%",
-    marketShare: "0.12%",
-    marketShareTrend: "up",
-    totalAddressableMarket: "$45B",
-    servicableMarket: "$12B",
-    confidenceScore: 87
+    estimatedRevenue: market?.metrics?.find((m: any) => m.name?.toLowerCase().includes('revenue'))?.value || '-',
+    revenueGrowth: `${market?.metrics?.find((m: any) => m.name?.toLowerCase().includes('growth'))?.change_percentage ?? ''}%`,
+    marketShare: market?.metrics?.find((m: any) => m.name?.toLowerCase().includes('market share'))?.value || '-',
+    marketShareTrend: market?.metrics?.find((m: any) => m.name?.toLowerCase().includes('market share'))?.trend || 'stable',
+    totalAddressableMarket: market?.metrics?.find((m: any) => m.name?.toLowerCase().includes('tam'))?.value || '-',
+    servicableMarket: market?.metrics?.find((m: any) => m.name?.toLowerCase().includes('sam'))?.value || '-',
+    confidenceScore: Math.round(((market?.confidence_score ?? 0) * 100)),
   }
 
-  const revenueBreakdown = [
-    { source: "Enterprise Licenses", amount: "$1.8M", percentage: 64, growth: "+280%" },
-    { source: "Professional Services", amount: "$640K", percentage: 23, growth: "+190%" },
-    { source: "API Usage", amount: "$360K", percentage: 13, growth: "+420%" }
-  ]
-
-  const marketMetrics = [
-    {
-      category: "Market Size",
-      tam: "$45B",
-      sam: "$12B",
-      som: "$1.2B",
-      growth: "18% CAGR",
-      trend: "up"
-    },
-    {
-      category: "Customer Segments",
-      enterprise: "68%",
-      midMarket: "24%",
-      smb: "8%",
-      growth: "Expanding enterprise",
-      trend: "up"
-    },
-    {
-      category: "Geographic Distribution",
-      northAmerica: "72%",
-      europe: "19%",
-      asiaPacific: "9%",
-      growth: "EU expansion",
-      trend: "up"
-    }
-  ]
-
-  const competitorRevenue = [
-    { company: "AI Innovations", revenue: "$45M", marketShare: "1.8%", growth: "+85%" },
-    { company: "DataMind Corp", revenue: "$32M", marketShare: "1.3%", growth: "+62%" },
-    { company: "Neural Systems", revenue: "$28M", marketShare: "1.1%", growth: "+95%" },
-    { company: "TechFlow AI", revenue: "$2.8M", marketShare: "0.12%", growth: "+240%" },
-    { company: "Quantum Analytics", revenue: "$18M", marketShare: "0.7%", growth: "+45%" }
-  ]
-
-  const salesData = [
-    {
-      platform: "Salesforce AppExchange",
-      installs: "1,247",
-      rating: 4.6,
-      reviews: 89,
-      revenue: "$340K",
-      growth: "+156%"
-    },
-    {
-      platform: "AWS Marketplace",
-      installs: "856",
-      rating: 4.4,
-      reviews: 67,
-      revenue: "$280K",
-      growth: "+210%"
-    },
-    {
-      platform: "Microsoft AppSource",
-      installs: "634",
-      rating: 4.5,
-      reviews: 45,
-      revenue: "$180K",
-      growth: "+189%"
-    },
-    {
-      platform: "Google Cloud Marketplace",
-      installs: "423",
-      rating: 4.3,
-      reviews: 32,
-      revenue: "$120K",
-      growth: "+234%"
-    }
-  ]
-
-  const marketInsights = [
-    "Enterprise AI market experiencing unprecedented growth with 18% CAGR",
-    "TechFlow positioned in fastest-growing segment (AutoML) with 31% annual growth",
-    "Customer acquisition cost has decreased 40% while lifetime value increased 180%",
-    "Recurring revenue now represents 85% of total revenue, indicating strong product-market fit",
-    "Geographic expansion into Europe showing 3x faster adoption than projected"
-  ]
-
-  const industryTrends = [
-    {
-      trend: "Automated Machine Learning",
-      impact: "High",
-      relevance: 95,
-      description: "Growing demand for no-code/low-code ML solutions"
-    },
-    {
-      trend: "AI Ethics & Governance",
-      impact: "Medium",
-      relevance: 78,
-      description: "Increased focus on responsible AI development"
-    },
-    {
-      trend: "Edge AI Computing",
-      impact: "Medium",
-      relevance: 65,
-      description: "Processing AI workloads closer to data sources"
-    },
-    {
-      trend: "MLOps Standardization",
-      impact: "High", 
-      relevance: 89,
-      description: "Operational best practices for ML lifecycle management"
-    }
-  ]
-
-  const marketForces = [
-    {
-      force: "Competitive Rivalry",
-      intensity: "Medium",
-      score: 65,
-      description: "Moderate competition with few direct competitors",
-      factors: ["Market fragmentation", "High switching costs", "Product differentiation"]
-    },
-    {
-      force: "Supplier Power",
-      intensity: "Low",
-      score: 35,
-      description: "Multiple cloud providers and tech stack options",
-      factors: ["Multiple vendors", "Low switching costs", "Standardized infrastructure"]
-    },
-    {
-      force: "Buyer Power",
-      intensity: "Medium",
-      score: 55,
-      description: "Enterprise buyers have negotiation leverage",
-      factors: ["Large deal sizes", "Procurement processes", "ROI requirements"]
-    },
-    {
-      force: "Threat of Substitutes",
-      intensity: "Low",
-      score: 40,
-      description: "Limited alternatives to automated ML platforms",
-      factors: ["In-house development", "Consulting services", "Manual processes"]
-    },
-    {
-      force: "Barriers to Entry",
-      intensity: "High",
-      score: 80,
-      description: "Significant technical and capital requirements",
-      factors: ["Technical expertise", "AI talent", "Research investment"]
-    }
-  ]
+  const revenueBreakdown = (market?.metrics || []).filter((m: any) => m.category === 'financial')
+  const marketMetrics = (market?.metrics || []).filter((m: any) => m.category === 'market')
+  const competitorRevenue = (analysisData?.competitive_analyses || []).flatMap((a: any) => a.metrics || [])
+  const salesData = (market?.metrics || []).filter((m: any) => (m.name || '').toLowerCase().includes('marketplace'))
+  const marketInsights = market?.key_findings || []
+  const industryTrends = market?.opportunities || []
+  const marketForces = market?.risk_factors || []
 
   return (
     <div className="p-6 space-y-6">
@@ -191,6 +86,27 @@ export function MarketAnalysis() {
         <p className="text-muted-foreground">
           AI-powered market share, revenue analysis, and competitive positioning
         </p>
+        <div className="text-xs text-muted-foreground flex items-center gap-2">
+          <Calendar className="h-3 w-3" />
+          <span>Last analysis update: {lastUpdated}</span>
+        </div>
+      </div>
+
+      {/* Company In Focus */}
+      <div className="rounded-lg border bg-muted/40 p-3 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-md bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-base md:text-lg">
+            {(company?.name || companyName).charAt(0)}
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground">Analyzing company</div>
+            <div className="font-medium">{company?.name || companyName}</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">In focus</Badge>
+          <Button variant="ghost" size="sm" onClick={() => window.dispatchEvent(new CustomEvent('open-company-selector'))}>Change</Button>
+        </div>
       </div>
 
       {/* Key Metrics */}
@@ -206,7 +122,7 @@ export function MarketAnalysis() {
             </div>
             <div className="flex items-center space-x-1 text-sm text-green-600">
               <ArrowUpRight className="h-4 w-4" />
-              <span>{marketData.revenueGrowth} YoY</span>
+              <span>{marketData.revenueGrowth || ''} YoY</span>
             </div>
           </CardContent>
         </Card>
@@ -276,21 +192,21 @@ export function MarketAnalysis() {
                 <CardTitle>Revenue Breakdown</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {revenueBreakdown.map((item, index) => (
+                {revenueBreakdown.map((item: any, index: number) => (
                   <div key={index} className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{item.source}</span>
+                      <span className="text-sm font-medium">{item.name}</span>
                       <div className="flex items-center space-x-2">
-                        <span className="font-semibold">{item.amount}</span>
+                        <span className="font-semibold">{item.value}</span>
                         <Badge variant="outline" className="text-xs">
-                          {item.growth}
+                          {item.change_percentage != null ? `${item.change_percentage}%` : ''}
                         </Badge>
                       </div>
                     </div>
-                    <Progress value={item.percentage} className="h-2" />
+                    <Progress value={item.score ?? 0} className="h-2" />
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{item.percentage}% of total</span>
-                      <span>{item.growth} YoY growth</span>
+                      <span>{item.score ?? 0}% of total</span>
+                      {item.change_percentage != null && <span>{item.change_percentage}% vs last period</span>}
                     </div>
                   </div>
                 ))}
@@ -303,36 +219,24 @@ export function MarketAnalysis() {
                 <CardTitle>Market Metrics</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {marketMetrics.map((metric, index) => (
+                {marketMetrics.map((metric: any, index: number) => (
                   <div key={index} className="p-4 bg-muted/50 rounded-lg">
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium">{metric.category}</h4>
+                      <h4 className="font-medium">{metric.name}</h4>
                       <div className="flex items-center space-x-1 text-green-600">
                         <ArrowUpRight className="h-4 w-4" />
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-sm">
                       <div className="text-center">
-                        <div className="font-semibold">{metric.tam || metric.enterprise || metric.northAmerica}</div>
+                        <div className="font-semibold">{metric.value}</div>
                         <div className="text-xs text-muted-foreground">
-                          {metric.tam ? 'TAM' : metric.enterprise ? 'Enterprise' : 'North America'}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-semibold">{metric.sam || metric.midMarket || metric.europe}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {metric.sam ? 'SAM' : metric.midMarket ? 'Mid-Market' : 'Europe'}
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-semibold">{metric.som || metric.smb || metric.asiaPacific}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {metric.som ? 'SOM' : metric.smb ? 'SMB' : 'Asia Pacific'}
+                          {metric.category}
                         </div>
                       </div>
                     </div>
                     <div className="mt-2 text-xs text-muted-foreground">
-                      Growth: {metric.growth}
+                      Change: {metric.change_percentage != null ? `${metric.change_percentage}%` : '—'}
                     </div>
                   </div>
                 ))}
@@ -379,23 +283,23 @@ export function MarketAnalysis() {
               <CardTitle>Competitive Revenue Analysis</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {competitorRevenue.map((competitor, index) => (
+              {competitorRevenue.map((competitor: any, index: number) => (
                 <div key={index} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-center space-x-4">
                     <div className="text-lg font-medium">{index + 1}</div>
                     <div>
-                      <div className={`font-medium ${competitor.company === 'TechFlow AI' ? 'text-blue-600' : ''}`}>
-                        {competitor.company}
+                      <div className={`font-medium`}>
+                        {competitor.name || competitor.title}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Market Share: {competitor.marketShare}
+                        Value: {competitor.value}
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-semibold">{competitor.revenue}</div>
-                    <div className={`text-sm ${competitor.growth.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
-                      {competitor.growth} growth
+                    <div className="text-lg font-semibold">{competitor.score ?? 0}</div>
+                    <div className={`text-sm ${Number(competitor.change_percentage) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {competitor.change_percentage != null ? `${competitor.change_percentage}%` : ''} change
                     </div>
                   </div>
                 </div>
@@ -406,11 +310,11 @@ export function MarketAnalysis() {
 
         <TabsContent value="sales" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {salesData.map((platform, index) => (
+            {salesData.map((platform: any, index: number) => (
               <Card key={index}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold">{platform.platform}</h3>
+                    <h3 className="font-semibold">{platform.name || platform.platform}</h3>
                     <Button variant="outline" size="sm">
                       <ExternalLink className="h-4 w-4 mr-1" />
                       View
@@ -419,11 +323,11 @@ export function MarketAnalysis() {
                   
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="text-center p-3 bg-muted/50 rounded-lg">
-                      <div className="text-lg font-bold">{platform.installs}</div>
+                      <div className="text-lg font-bold">{platform.installs || '-'}</div>
                       <div className="text-xs text-muted-foreground">Installs</div>
                     </div>
                     <div className="text-center p-3 bg-muted/50 rounded-lg">
-                      <div className="text-lg font-bold">{platform.revenue}</div>
+                      <div className="text-lg font-bold">{platform.revenue || platform.value || '-'}</div>
                       <div className="text-xs text-muted-foreground">Revenue</div>
                     </div>
                   </div>
@@ -431,15 +335,15 @@ export function MarketAnalysis() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-2">
                       <Star className="h-4 w-4 text-yellow-500" />
-                      <span className="font-medium">{platform.rating}</span>
-                      <span className="text-sm text-muted-foreground">({platform.reviews} reviews)</span>
+                      <span className="font-medium">{platform.rating ?? '-'}</span>
+                      {platform.reviews && <span className="text-sm text-muted-foreground">({platform.reviews} reviews)</span>}
                     </div>
                     <Badge variant="outline" className="text-xs">
-                      {platform.growth}
+                      {platform.change_percentage != null ? `${platform.change_percentage}%` : ''}
                     </Badge>
                   </div>
                   
-                  <Progress value={platform.rating * 20} className="h-2" />
+                  <Progress value={(platform.rating ?? 0) * 20} className="h-2" />
                 </CardContent>
               </Card>
             ))}
@@ -448,11 +352,11 @@ export function MarketAnalysis() {
 
         <TabsContent value="trends" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {industryTrends.map((trend, index) => (
+            {industryTrends.map((trend: any, index: number) => (
               <Card key={index}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold">{trend.trend}</h3>
+                    <h3 className="font-semibold">{trend.trend || trend.title || 'Trend'}</h3>
                     <Badge 
                       variant={trend.impact === 'High' ? 'default' : 'secondary'}
                     >
@@ -462,10 +366,10 @@ export function MarketAnalysis() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Relevance</span>
-                      <span className="font-medium">{trend.relevance}%</span>
+                      <span className="font-medium">{trend.relevance ?? trend.score ?? 0}%</span>
                     </div>
-                    <Progress value={trend.relevance} className="h-2" />
-                    <p className="text-sm text-muted-foreground">{trend.description}</p>
+                    <Progress value={trend.relevance ?? trend.score ?? 0} className="h-2" />
+                    <p className="text-sm text-muted-foreground">{trend.description || String(trend)}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -481,10 +385,10 @@ export function MarketAnalysis() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {marketInsights.map((insight, index) => (
+              {marketInsights.map((insight: any, index: number) => (
                 <div key={index} className="flex items-start space-x-3 p-4 bg-white/50 dark:bg-black/20 rounded-lg">
                   <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm text-blue-800 dark:text-blue-200">{insight}</p>
+                  <p className="text-sm text-blue-800 dark:text-blue-200">{typeof insight === 'string' ? insight : (insight?.text || JSON.stringify(insight))}</p>
                 </div>
               ))}
             </CardContent>

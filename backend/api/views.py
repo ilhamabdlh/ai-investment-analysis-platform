@@ -8,12 +8,18 @@ from django.contrib.auth.models import User
 from datetime import datetime, timedelta
 
 from .models import (
-    Company, CompanyTag, Analysis, Metric, Lead, Investment, UserProfile
+    Company, CompanyTag, Metric, Lead, Investment, UserProfile,
+    HighLevelAnalysis, PerceptionAnalysis, MarketAnalysis,
+    KeyIndividualsAnalysis, CompetitiveAnalysis
 )
 from .serializers import (
     CompanySerializer, CompanyListSerializer, CompanyTagSerializer,
-    AnalysisSerializer, AnalysisListSerializer, MetricSerializer,
-    LeadSerializer, InvestmentSerializer, UserProfileSerializer,
+    HighLevelAnalysisSerializer, HighLevelAnalysisListSerializer,
+    PerceptionAnalysisSerializer, PerceptionAnalysisListSerializer,
+    MarketAnalysisSerializer, MarketAnalysisListSerializer,
+    KeyIndividualsAnalysisSerializer, KeyIndividualsAnalysisListSerializer,
+    CompetitiveAnalysisSerializer, CompetitiveAnalysisListSerializer,
+    MetricSerializer, LeadSerializer, InvestmentSerializer, UserProfileSerializer,
     DashboardStatsSerializer, CompanyAnalysisSerializer
 )
 
@@ -37,22 +43,33 @@ class CompanyViewSet(viewsets.ModelViewSet):
         """Get comprehensive analysis for a company"""
         company = self.get_object()
         
-        analyses = Analysis.objects.filter(company=company).order_by('-created_at')
+        # Get all analysis types
+        high_level_analyses = HighLevelAnalysis.objects.filter(company=company).order_by('-created_at')
+        perception_analyses = PerceptionAnalysis.objects.filter(company=company).order_by('-created_at')
+        market_analyses = MarketAnalysis.objects.filter(company=company).order_by('-created_at')
+        key_individuals_analyses = KeyIndividualsAnalysis.objects.filter(company=company).order_by('-created_at')
+        competitive_analyses = CompetitiveAnalysis.objects.filter(company=company).order_by('-created_at')
+        
         leads = Lead.objects.filter(company=company).order_by('-created_at')
         investments = Investment.objects.filter(company=company).order_by('-investment_date')
         
         # Calculate metrics summary
+        all_analyses = list(high_level_analyses) + list(perception_analyses) + list(market_analyses) + list(key_individuals_analyses) + list(competitive_analyses)
         metrics_summary = {
-            'total_analyses': analyses.count(),
-            'avg_score': analyses.aggregate(avg=Avg('overall_score'))['avg'] or 0,
-            'avg_confidence': analyses.aggregate(avg=Avg('confidence_score'))['avg'] or 0,
+            'total_analyses': len(all_analyses),
+            'avg_score': sum(a.overall_score or 0 for a in all_analyses) / len(all_analyses) if all_analyses else 0,
+            'avg_confidence': sum(a.confidence_score or 0 for a in all_analyses) / len(all_analyses) if all_analyses else 0,
             'total_investment': investments.aggregate(total=Sum('amount'))['total'] or 0,
             'lead_status_breakdown': dict(leads.values('status').annotate(count=Count('status')).values_list('status', 'count'))
         }
         
         serializer = CompanyAnalysisSerializer({
             'company': company,
-            'analyses': analyses,
+            'high_level_analyses': high_level_analyses,
+            'perception_analyses': perception_analyses,
+            'market_analyses': market_analyses,
+            'key_individuals_analyses': key_individuals_analyses,
+            'competitive_analyses': competitive_analyses,
             'leads': leads,
             'investments': investments,
             'metrics_summary': metrics_summary
@@ -97,40 +114,91 @@ class CompanyViewSet(viewsets.ModelViewSet):
         serializer = CompanyListSerializer(queryset, many=True)
         return Response(serializer.data)
 
-class AnalysisViewSet(viewsets.ModelViewSet):
-    """ViewSet for managing analyses"""
-    queryset = Analysis.objects.all()
+# Analysis ViewSets for each type
+class HighLevelAnalysisViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing high-level analyses"""
+    queryset = HighLevelAnalysis.objects.all()
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    # filterset_fields = ['analysis_type', 'is_completed', 'analyst']  # Requires django-filter
     search_fields = ['title', 'summary']
     ordering_fields = ['created_at', 'updated_at', 'overall_score']
     ordering = ['-created_at']
     
     def get_serializer_class(self):
         if self.action == 'list':
-            return AnalysisListSerializer
-        return AnalysisSerializer
+            return HighLevelAnalysisListSerializer
+        return HighLevelAnalysisSerializer
     
     def perform_create(self, serializer):
         serializer.save(analyst=self.request.user)
+
+class PerceptionAnalysisViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing perception analyses"""
+    queryset = PerceptionAnalysis.objects.all()
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['title', 'summary']
+    ordering_fields = ['created_at', 'updated_at', 'overall_score']
+    ordering = ['-created_at']
     
-    @action(detail=False, methods=['get'])
-    def recent(self, request):
-        """Get recent analyses"""
-        queryset = self.get_queryset()[:10]
-        serializer = AnalysisListSerializer(queryset, many=True)
-        return Response(serializer.data)
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return PerceptionAnalysisListSerializer
+        return PerceptionAnalysisSerializer
     
-    @action(detail=True, methods=['post'])
-    def complete(self, request, pk=None):
-        """Mark analysis as completed"""
-        analysis = self.get_object()
-        analysis.is_completed = True
-        analysis.save()
-        
-        serializer = AnalysisSerializer(analysis)
-        return Response(serializer.data)
+    def perform_create(self, serializer):
+        serializer.save(analyst=self.request.user)
+
+class MarketAnalysisViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing market analyses"""
+    queryset = MarketAnalysis.objects.all()
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['title', 'summary']
+    ordering_fields = ['created_at', 'updated_at', 'overall_score']
+    ordering = ['-created_at']
+    
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return MarketAnalysisListSerializer
+        return MarketAnalysisSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(analyst=self.request.user)
+
+class KeyIndividualsAnalysisViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing key individuals analyses"""
+    queryset = KeyIndividualsAnalysis.objects.all()
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['title', 'summary']
+    ordering_fields = ['created_at', 'updated_at', 'overall_score']
+    ordering = ['-created_at']
+    
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return KeyIndividualsAnalysisListSerializer
+        return KeyIndividualsAnalysisSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(analyst=self.request.user)
+
+class CompetitiveAnalysisViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing competitive analyses"""
+    queryset = CompetitiveAnalysis.objects.all()
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['title', 'summary']
+    ordering_fields = ['created_at', 'updated_at', 'overall_score']
+    ordering = ['-created_at']
+    
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return CompetitiveAnalysisListSerializer
+        return CompetitiveAnalysisSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(analyst=self.request.user)
 
 class LeadViewSet(viewsets.ModelViewSet):
     """ViewSet for managing leads"""
@@ -201,10 +269,13 @@ class DashboardViewSet(viewsets.ViewSet):
         
         # Analysis completed this month
         month_start = datetime.now().replace(day=1)
-        analysis_completed = Analysis.objects.filter(
-            created_at__gte=month_start,
-            is_completed=True
-        ).count()
+        analysis_completed = (
+            HighLevelAnalysis.objects.filter(created_at__gte=month_start, is_completed=True).count() +
+            PerceptionAnalysis.objects.filter(created_at__gte=month_start, is_completed=True).count() +
+            MarketAnalysis.objects.filter(created_at__gte=month_start, is_completed=True).count() +
+            KeyIndividualsAnalysis.objects.filter(created_at__gte=month_start, is_completed=True).count() +
+            CompetitiveAnalysis.objects.filter(created_at__gte=month_start, is_completed=True).count()
+        )
         
         # Success rate (investments vs total leads)
         total_leads = Lead.objects.count()
@@ -246,9 +317,33 @@ class DashboardViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def recent_analyses(self, request):
         """Get recent analyses for dashboard"""
-        analyses = Analysis.objects.select_related('company', 'analyst').order_by('-created_at')[:5]
-        serializer = AnalysisListSerializer(analyses, many=True)
-        return Response(serializer.data)
+        # Get recent analyses from all types
+        recent_high_level = HighLevelAnalysis.objects.select_related('company', 'analyst').order_by('-created_at')[:2]
+        recent_perception = PerceptionAnalysis.objects.select_related('company', 'analyst').order_by('-created_at')[:2]
+        recent_market = MarketAnalysis.objects.select_related('company', 'analyst').order_by('-created_at')[:2]
+        recent_key_individuals = KeyIndividualsAnalysis.objects.select_related('company', 'analyst').order_by('-created_at')[:2]
+        recent_competitive = CompetitiveAnalysis.objects.select_related('company', 'analyst').order_by('-created_at')[:2]
+        
+        # Combine and sort by created_at
+        all_recent = list(recent_high_level) + list(recent_perception) + list(recent_market) + list(recent_key_individuals) + list(recent_competitive)
+        all_recent.sort(key=lambda x: x.created_at, reverse=True)
+        
+        # Serialize each type appropriately
+        serialized_analyses = []
+        for analysis in all_recent[:5]:  # Limit to 5 most recent
+            if isinstance(analysis, HighLevelAnalysis):
+                serializer = HighLevelAnalysisListSerializer(analysis)
+            elif isinstance(analysis, PerceptionAnalysis):
+                serializer = PerceptionAnalysisListSerializer(analysis)
+            elif isinstance(analysis, MarketAnalysis):
+                serializer = MarketAnalysisListSerializer(analysis)
+            elif isinstance(analysis, KeyIndividualsAnalysis):
+                serializer = KeyIndividualsAnalysisListSerializer(analysis)
+            elif isinstance(analysis, CompetitiveAnalysis):
+                serializer = CompetitiveAnalysisListSerializer(analysis)
+            serialized_analyses.append(serializer.data)
+        
+        return Response(serialized_analyses)
     
     @action(detail=False, methods=['get'])
     def upcoming_tasks(self, request):

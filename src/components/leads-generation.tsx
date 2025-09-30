@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -18,90 +18,51 @@ import {
   ArrowRight,
   Star
 } from 'lucide-react'
+import { apiService } from '../services/api'
+
+interface Company {
+  id: string
+  name: string
+  description: string
+  industry: string
+  stage: string
+  founded_year: number
+  headquarters: string
+  website?: string
+  logo_url?: string
+  employee_range: string
+  funding_raised?: number
+  funding_currency: string
+  ai_score?: number
+  ai_confidence?: number
+  created_at: string
+  updated_at: string
+}
 
 export function LeadsGeneration() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedIndustry, setSelectedIndustry] = useState('all')
   const [selectedStage, setSelectedStage] = useState('all')
+  const [companies, setCompanies] = useState<Company[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const companies = [
-    {
-      id: 1,
-      name: "NeuralGrid",
-      industry: "AI/ML",
-      stage: "Series A",
-      location: "San Francisco, CA",
-      founded: "2022",
-      funding: "$12M",
-      employees: "25-50",
-      description: "Advanced neural network optimization for enterprise applications",
-      aiScore: 94,
-      aiInsights: [
-        "Strong technical team with PhDs from Stanford and MIT",
-        "Revenue growing 400% YoY with major enterprise clients",
-        "Unique IP in neural architecture search"
-      ],
-      tags: ["Machine Learning", "Enterprise", "B2B SaaS"],
-      logo: "🧠"
-    },
-    {
-      id: 2,
-      name: "EcoLogistics",
-      industry: "CleanTech",
-      stage: "Seed",
-      location: "Austin, TX",
-      founded: "2023",
-      funding: "$3.5M",
-      employees: "10-25",
-      description: "Carbon-neutral supply chain optimization platform",
-      aiScore: 87,
-      aiInsights: [
-        "Addressing $500B market with strong ESG tailwinds",
-        "Partnerships with major logistics companies",
-        "Proven reduction of 30% in carbon emissions"
-      ],
-      tags: ["ESG", "Logistics", "Sustainability"],
-      logo: "🌱"
-    },
-    {
-      id: 3,
-      name: "QuantumSecure",
-      industry: "Cybersecurity",
-      stage: "Series B",
-      location: "Boston, MA",
-      founded: "2021",
-      funding: "$25M",
-      employees: "50-100",
-      description: "Quantum-resistant encryption for financial institutions",
-      aiScore: 91,
-      aiInsights: [
-        "First-mover advantage in quantum-safe cryptography",
-        "Major banks as early adopters and strategic partners",
-        "Patent portfolio worth estimated $50M+"
-      ],
-      tags: ["Cybersecurity", "Quantum", "FinTech"],
-      logo: "🔐"
-    },
-    {
-      id: 4,
-      name: "BioSynth Labs",
-      industry: "BioTech",
-      stage: "Pre-Seed",
-      location: "Cambridge, MA",
-      founded: "2024",
-      funding: "$1.2M",
-      employees: "5-10",
-      description: "Synthetic biology platform for personalized medicine",
-      aiScore: 78,
-      aiInsights: [
-        "Breakthrough technology in protein synthesis",
-        "Strong IP position with 5 patents pending",
-        "Early validation from pharma partnerships"
-      ],
-      tags: ["Biotech", "Synthetic Biology", "Healthcare"],
-      logo: "🧬"
+  useEffect(() => {
+    fetchCompanies()
+  }, [])
+
+  const fetchCompanies = async () => {
+    try {
+      setLoading(true)
+      const response = await apiService.companies.list()
+      setCompanies(response.data.results || response.data)
+    } catch (err) {
+      console.error('Error fetching companies:', err)
+      setError('Failed to load companies')
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
 
   const filteredCompanies = companies.filter(company => {
     const matchesSearch = company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -112,8 +73,34 @@ export function LeadsGeneration() {
     return matchesSearch && matchesIndustry && matchesStage
   })
 
-  const industries = ["AI/ML", "CleanTech", "Cybersecurity", "BioTech", "FinTech", "HealthTech"]
-  const stages = ["Pre-Seed", "Seed", "Series A", "Series B", "Series C+"]
+  const industries = [...new Set(companies.map(c => c.industry))]
+  const stages = [...new Set(companies.map(c => c.stage))]
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading companies...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button onClick={fetchCompanies}>Retry</Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -221,7 +208,11 @@ export function LeadsGeneration() {
           <Card key={company.id} className="hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-start space-x-4">
-                <div className="text-3xl">{company.logo}</div>
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">
+                    {company.name.charAt(0)}
+                  </span>
+                </div>
                 
                 <div className="flex-1">
                   <div className="flex items-start justify-between mb-3">
@@ -237,60 +228,41 @@ export function LeadsGeneration() {
                       <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                         <div className="flex items-center space-x-1">
                           <MapPin className="h-4 w-4" />
-                          <span>{company.location}</span>
+                          <span>{company.headquarters}</span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <Calendar className="h-4 w-4" />
-                          <span>Founded {company.founded}</span>
+                          <span>Founded {company.founded_year}</span>
                         </div>
-                        <div className="flex items-center space-x-1">
-                          <DollarSign className="h-4 w-4" />
-                          <span>{company.funding} raised</span>
-                        </div>
+                        {company.funding_raised && (
+                          <div className="flex items-center space-x-1">
+                            <DollarSign className="h-4 w-4" />
+                            <span>${(company.funding_raised / 1000000).toFixed(1)}M raised</span>
+                          </div>
+                        )}
                         <div className="flex items-center space-x-1">
                           <Users className="h-4 w-4" />
-                          <span>{company.employees} employees</span>
+                          <span>{company.employee_range} employees</span>
                         </div>
                       </div>
                     </div>
                     
                     <div className="text-right">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Star className="h-4 w-4 text-yellow-500" />
-                        <span className="font-bold text-lg">{company.aiScore}</span>
-                        <span className="text-sm text-muted-foreground">/100</span>
-                      </div>
-                      <Badge 
-                        variant={company.aiScore >= 90 ? "default" : company.aiScore >= 80 ? "secondary" : "outline"}
-                        className="mb-3"
-                      >
-                        {company.aiScore >= 90 ? "High Potential" : company.aiScore >= 80 ? "Good Fit" : "Moderate Fit"}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <div className="flex flex-wrap gap-2">
-                      {company.tags.map((tag, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="bg-muted/50 rounded-lg p-4 mb-4">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Sparkles className="h-4 w-4 text-blue-500" />
-                      <span className="font-medium text-sm">AI Insights</span>
-                    </div>
-                    <div className="space-y-1">
-                      {company.aiInsights.map((insight, index) => (
-                        <div key={index} className="flex items-start space-x-2">
-                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                          <span className="text-sm text-muted-foreground">{insight}</span>
-                        </div>
-                      ))}
+                      {company.ai_score && (
+                        <>
+                          <div className="flex items-center space-x-2 mb-2">
+                            <Star className="h-4 w-4 text-yellow-500" />
+                            <span className="font-bold text-lg">{company.ai_score}</span>
+                            <span className="text-sm text-muted-foreground">/100</span>
+                          </div>
+                          <Badge 
+                            variant={company.ai_score >= 90 ? "default" : company.ai_score >= 80 ? "secondary" : "outline"}
+                            className="mb-3"
+                          >
+                            {company.ai_score >= 90 ? "High Potential" : company.ai_score >= 80 ? "Good Fit" : "Moderate Fit"}
+                          </Badge>
+                        </>
+                      )}
                     </div>
                   </div>
 

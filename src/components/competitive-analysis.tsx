@@ -1,15 +1,15 @@
+import React, { useEffect, useMemo, useState } from 'react'
+import { useCompany } from '../context/company-context'
+import { apiService } from '../services/api'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
-import { Progress } from './ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { 
   GitCompare, 
   TrendingUp, 
-  Target,
   Zap,
   Shield,
-  Users,
   DollarSign,
   Star,
   Sparkles,
@@ -25,242 +25,131 @@ import {
 } from 'lucide-react'
 
 export function CompetitiveAnalysis() {
-  const competitors = [
-    {
-      name: "AI Innovations",
-      position: "Market Leader",
-      marketShare: "18.5%",
-      revenue: "$45M",
-      funding: "$120M Series C",
-      employees: 340,
-      founded: "2019",
-      headquarters: "San Francisco, CA",
-      strengths: ["Brand Recognition", "Enterprise Sales", "Product Maturity"],
-      weaknesses: ["High Pricing", "Complex Implementation", "Slow Innovation"],
-      score: 78,
-      trend: "stable",
-      logo: "🚀"
-    },
-    {
-      name: "DataMind Corp",
-      position: "Strong Challenger",
-      marketShare: "12.3%",
-      revenue: "$32M",
-      funding: "$85M Series B",
-      employees: 280,
-      founded: "2020",
-      headquarters: "Austin, TX",
-      strengths: ["Technical Innovation", "Customer Support", "Competitive Pricing"],
-      weaknesses: ["Limited Brand Awareness", "Smaller Sales Team", "Geographic Concentration"],
-      score: 74,
-      trend: "up",
-      logo: "🧠"
-    },
-    {
-      name: "TechFlow AI",
-      position: "Rising Star",
-      marketShare: "3.1%",
-      revenue: "$2.8M",
-      funding: "$15M Series A",
-      employees: 47,
-      founded: "2022",
-      headquarters: "San Francisco, CA",
-      strengths: ["Product Innovation", "Team Quality", "Growth Rate"],
-      weaknesses: ["Market Presence", "Customer Base Size", "Sales Infrastructure"],
-      score: 87,
-      trend: "up",
-      logo: "⚡"
-    },
-    {
-      name: "Neural Systems",
-      position: "Niche Player",
-      marketShare: "8.7%",
-      revenue: "$28M",
-      funding: "$60M Series B",
-      employees: 220,
-      founded: "2018",
-      headquarters: "Boston, MA",
-      strengths: ["Specialized Solutions", "Research Depth", "Academic Partnerships"],
-      weaknesses: ["Limited Market Appeal", "Slow Growth", "High Technical Complexity"],
-      score: 65,
-      trend: "down",
-      logo: "🔬"
-    },
-    {
-      name: "Quantum Analytics",
-      position: "Fast Follower",
-      marketShare: "6.2%",
-      revenue: "$18M",
-      funding: "$40M Series A",
-      employees: 180,
-      founded: "2021",
-      headquarters: "Seattle, WA",
-      strengths: ["Aggressive Pricing", "Quick Implementation", "Customer Acquisition"],
-      weaknesses: ["Product Depth", "Technical Differentiation", "Investor Confidence"],
-      score: 62,
-      trend: "stable",
-      logo: "📊"
-    }
-  ]
+  const { company } = useCompany()
+  const [analysisData, setAnalysisData] = useState<any | null>(null)
+  const [loading, setLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
+  const lastUpdated = useMemo(() => new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }), [])
 
-  const competitiveMetrics = [
-    {
-      metric: "Product Features",
-      techflow: 92,
-      aiInnovations: 85,
-      datamind: 88,
-      neural: 90,
-      quantum: 75
-    },
-    {
-      metric: "Market Position",
-      techflow: 45,
-      aiInnovations: 95,
-      datamind: 78,
-      neural: 65,
-      quantum: 58
-    },
-    {
-      metric: "Customer Satisfaction",
-      techflow: 94,
-      aiInnovations: 76,
-      datamind: 89,
-      neural: 82,
-      quantum: 71
-    },
-    {
-      metric: "Innovation Rate",
-      techflow: 96,
-      aiInnovations: 72,
-      datamind: 84,
-      neural: 88,
-      quantum: 69
-    },
-    {
-      metric: "Pricing Competitiveness",
-      techflow: 85,
-      aiInnovations: 55,
-      datamind: 78,
-      neural: 60,
-      quantum: 92
+  useEffect(() => {
+    let isMounted = true
+    async function fetchData() {
+      if (!company?.id) return
+      setLoading(true)
+      setError(null)
+      try {
+        const resp = await apiService.companies.fullAnalysis(company.id)
+        if (!isMounted) return
+        setAnalysisData(resp.data)
+      } catch (e) {
+        if (!isMounted) return
+        setError('Failed to load analysis')
+      } finally {
+        if (isMounted) setLoading(false)
+      }
     }
-  ]
+    fetchData()
+    return () => { isMounted = false }
+  }, [company?.id])
 
+  const competitive = useMemo(() => {
+    return analysisData?.competitive_analyses?.[0] || null
+  }, [analysisData])
+
+  const companyName = analysisData?.company?.name || '—'
+  
+  // Use structured competitors from the database, fall back to legacy competitor_analysis JSON
+  const competitors = useMemo(() => {
+    // Prefer the new structured competitors field
+    if (competitive?.competitors && competitive.competitors.length > 0) {
+      return competitive.competitors.map((c: any) => ({
+        name: c.name || 'Competitor',
+        position: c.position || '—',
+        marketShare: c.market_share || '-',
+        revenue: c.revenue || '-',
+        funding: c.funding || '-',
+        employees: c.employees || '-',
+        founded: c.founded || '-',
+        headquarters: c.headquarters || '-',
+        strengths: c.strengths || [],
+        weaknesses: c.weaknesses || [],
+        score: c.score || 0,
+        trend: c.trend || 'stable',
+        logo: c.logo || '📊',
+      }))
+    }
+    
+    // Fall back to legacy competitor_analysis JSON field
+    return (competitive?.competitor_analysis || []).map((c: any) => {
+      if (typeof c === 'string') {
+        return {
+          name: c,
+          position: '—',
+          marketShare: '-',
+          revenue: '-',
+          funding: '-',
+          employees: '-',
+          founded: '-',
+          headquarters: '-',
+          strengths: [],
+          weaknesses: [],
+          score: 0,
+          trend: 'stable',
+          logo: '📊',
+        }
+      }
+      return {
+        name: c.name || c.title || 'Competitor',
+        position: c.position || '—',
+        marketShare: c.marketShare || c.market_share || '-',
+        revenue: c.revenue || '-',
+        funding: c.funding || '-',
+        employees: c.employees || '-',
+        founded: c.founded || '-',
+        headquarters: c.headquarters || '-',
+        strengths: c.strengths || [],
+        weaknesses: c.weaknesses || [],
+        score: c.score || 0,
+        trend: c.trend || 'stable',
+        logo: c.logo || '📊',
+      }
+    })
+  }, [competitive])
+  
   const swotAnalysis = {
-    strengths: [
-      "Superior technical innovation and product quality",
-      "Exceptional team with proven track records",
-      "Fastest growth rate in the market segment",
-      "Strong customer satisfaction and retention",
-      "Competitive pricing with high value proposition"
-    ],
-    weaknesses: [
-      "Limited market presence compared to established players",
-      "Small customer base relative to competitors",
-      "Underdeveloped sales and marketing infrastructure",
-      "Limited geographic reach and international presence",
-      "Dependency on founder expertise and vision"
-    ],
-    opportunities: [
-      "Rapidly growing AI/ML market with high demand",
-      "Increasing enterprise adoption of automated solutions",
-      "Potential for strategic partnerships with cloud providers",
-      "International expansion opportunities",
-      "Adjacent market segments and product extensions"
-    ],
-    threats: [
-      "Well-funded competitors with aggressive expansion plans",
-      "Potential market consolidation through acquisitions",
-      "Economic downturn affecting enterprise software spending",
-      "Regulatory changes impacting AI development",
-      "Big tech companies entering the market segment"
-    ]
+    strengths: competitive?.swot_strengths || [],
+    weaknesses: competitive?.swot_weaknesses || [],
+    opportunities: competitive?.swot_opportunities || [],
+    threats: competitive?.swot_threats || [],
   }
+  
+  // Competitive advantages - simple list
+  const competitiveAdvantages = competitive?.competitive_advantages || []
+  
+  // Competitive threats - simple list
+  const competitiveThreats = competitive?.competitive_threats || []
+  
+  // Differentiation factors - simple list
+  const differentiationFactors = competitive?.differentiation_factors || []
 
-  const competitiveAdvantages = [
-    {
-      advantage: "Technical Innovation",
-      description: "Proprietary ML algorithms delivering 40% better performance than competitors",
-      sustainability: "High",
-      timeToReplicate: "18-24 months",
-      evidence: "Independent benchmarks and customer case studies"
-    },
-    {
-      advantage: "Team Quality",
-      description: "Leadership team from top-tier tech companies with proven execution",
-      sustainability: "Medium",
-      timeToReplicate: "12-18 months",
-      evidence: "Previous company achievements and industry recognition"
-    },
-    {
-      advantage: "Product-Market Fit",
-      description: "94% customer satisfaction with 85% recurring revenue",
-      sustainability: "High",
-      timeToReplicate: "24+ months", 
-      evidence: "Customer retention metrics and organic growth"
-    },
-    {
-      advantage: "Agility & Speed",
-      description: "Faster product development and customer response than larger competitors",
-      sustainability: "Medium",
-      timeToReplicate: "6-12 months",
-      evidence: "Feature release velocity and customer feedback cycles"
+  // Strategic recommendations - prefer structured data from database, fall back to legacy JSON
+  const strategicRecommendations = useMemo(() => {
+    // Use new structured strategic_recommendation_items field
+    if (competitive?.strategic_recommendation_items && competitive.strategic_recommendation_items.length > 0) {
+      return competitive.strategic_recommendation_items.map((item: any) => ({
+        category: item.category || 'Strategy',
+        priority: item.priority ? item.priority.charAt(0).toUpperCase() + item.priority.slice(1) : 'Medium',
+        recommendations: Array.isArray(item.recommendations) ? item.recommendations : []
+      })).filter((item: any) => item.recommendations.length > 0)
     }
-  ]
-
-  const threats = [
-    {
-      threat: "AI Innovations Market Dominance",
-      probability: "Medium",
-      impact: "High",
-      description: "Market leader could use resources to undercut pricing or acquire key customers",
-      mitigation: "Focus on product differentiation and customer loyalty programs"
-    },
-    {
-      threat: "Big Tech Entry",
-      probability: "High",
-      impact: "Very High",
-      description: "Google, Microsoft, or Amazon could launch competing solutions",
-      mitigation: "Build strong moats through proprietary technology and customer relationships"
-    },
-    {
-      threat: "Economic Downturn",
-      probability: "Medium",
-      impact: "Medium",
-      description: "Reduced enterprise spending on new technology initiatives",
-      mitigation: "Demonstrate clear ROI and focus on cost-saving value propositions"
-    }
-  ]
-
-  const strategicRecommendations = [
-    {
-      category: "Product Strategy",
-      priority: "High",
-      recommendations: [
-        "Continue investing in R&D to maintain technical leadership",
-        "Develop enterprise-grade security and compliance features",
-        "Build integrations with popular enterprise software platforms"
-      ]
-    },
-    {
-      category: "Market Strategy",
-      priority: "High",
-      recommendations: [
-        "Accelerate enterprise sales team hiring and training",
-        "Establish strategic partnerships with systems integrators",
-        "Develop vertical-specific solutions for key industries"
-      ]
-    },
-    {
-      category: "Competitive Strategy",
-      priority: "Medium",
-      recommendations: [
-        "Position against larger competitors on agility and innovation",
-        "Build defensive moats through customer success and retention",
-        "Consider strategic acquisitions to accelerate growth"
-      ]
-    }
-  ]
+    
+    // Fall back to legacy strategic_recommendations JSON field
+    return (competitive?.strategic_recommendations || []).map((r: any) => ({
+      category: r.category || 'Strategy',
+      priority: r.priority || 'Medium',
+      recommendations: Array.isArray(r.recommendations) ? r.recommendations : []
+    })).filter((item: any) => item.recommendations.length > 0)
+  }, [competitive])
 
   return (
     <div className="p-6 space-y-6">
@@ -274,57 +163,49 @@ export function CompetitiveAnalysis() {
         <p className="text-muted-foreground">
           Comprehensive competitor benchmarking and strategic positioning analysis
         </p>
+        <div className="text-xs text-muted-foreground flex items-center gap-2">
+          <Calendar className="h-3 w-3" />
+          <span>Last analysis update: {lastUpdated}</span>
+        </div>
       </div>
 
-      {/* Competitive Landscape Overview */}
-      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border-blue-200/50 dark:border-blue-700/50">
-        <CardContent className="p-6">
-          <div className="flex items-center space-x-4 mb-4">
-            <div className="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-full">
-              <Target className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">
-                Market Position Summary
-              </h3>
-              <p className="text-blue-700 dark:text-blue-300 text-sm">
-                TechFlow AI ranked #3 overall with highest innovation score and fastest growth
-              </p>
-            </div>
+      {/* Company In Focus */}
+      <div className="rounded-lg border bg-muted/40 p-3 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-md bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-base md:text-lg">
+            {(company?.name || companyName).charAt(0)}
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-3 bg-white/50 dark:bg-black/20 rounded-lg">
-              <div className="text-lg font-bold text-blue-800 dark:text-blue-200">3.1%</div>
-              <div className="text-sm text-blue-600 dark:text-blue-300">Market Share</div>
-            </div>
-            <div className="text-center p-3 bg-white/50 dark:bg-black/20 rounded-lg">
-              <div className="text-lg font-bold text-blue-800 dark:text-blue-200">#1</div>
-              <div className="text-sm text-blue-600 dark:text-blue-300">Innovation Score</div>
-            </div>
-            <div className="text-center p-3 bg-white/50 dark:bg-black/20 rounded-lg">
-              <div className="text-lg font-bold text-blue-800 dark:text-blue-200">+240%</div>
-              <div className="text-sm text-blue-600 dark:text-blue-300">Revenue Growth</div>
-            </div>
-            <div className="text-center p-3 bg-white/50 dark:bg-black/20 rounded-lg">
-              <div className="text-lg font-bold text-blue-800 dark:text-blue-200">94%</div>
-              <div className="text-sm text-blue-600 dark:text-blue-300">Customer Satisfaction</div>
-            </div>
+          <div>
+            <div className="text-sm text-muted-foreground">Analyzing company</div>
+            <div className="font-medium">{company?.name || companyName}</div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">In focus</Badge>
+          <Button variant="ghost" size="sm" onClick={() => window.dispatchEvent(new CustomEvent('open-company-selector'))}>Change</Button>
+        </div>
+      </div>
 
       {/* Analysis Tabs */}
       <Tabs defaultValue="landscape" className="space-y-6">
-        <TabsList className="grid grid-cols-5 w-full">
-          <TabsTrigger value="landscape">Competitive Landscape</TabsTrigger>
-          <TabsTrigger value="benchmarks">Benchmarks</TabsTrigger>
-          <TabsTrigger value="swot">SWOT Analysis</TabsTrigger>
-          <TabsTrigger value="advantages">Competitive Advantages</TabsTrigger>
-          <TabsTrigger value="strategy">Strategic Recommendations</TabsTrigger>
+        <TabsList className="inline-flex h-auto w-full flex-wrap justify-start gap-1">
+          <TabsTrigger value="landscape">Landscape</TabsTrigger>
+          <TabsTrigger value="swot">SWOT</TabsTrigger>
+          <TabsTrigger value="advantages">Advantages</TabsTrigger>
+          <TabsTrigger value="threats">Threats</TabsTrigger>
+          <TabsTrigger value="differentiation">Differentiation</TabsTrigger>
+          <TabsTrigger value="strategy">Strategy</TabsTrigger>
         </TabsList>
 
         <TabsContent value="landscape" className="space-y-6">
           <div className="space-y-6">
+            {competitors.length === 0 && (
+              <Card>
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  No competitor data available
+                </CardContent>
+              </Card>
+            )}
             {competitors.map((competitor, index) => (
               <Card key={index} className={`hover:shadow-md transition-shadow ${
                 competitor.name === 'TechFlow AI' ? 'ring-2 ring-blue-500/20 bg-blue-50/50 dark:bg-blue-950/20' : ''
@@ -336,7 +217,7 @@ export function CompetitiveAnalysis() {
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-4">
                         <div>
-                          <div className="flex items-center space-x-3 mb-2">
+                          {/* <div className="flex items-center space-x-3 mb-2">
                             <h3 className="text-xl font-semibold">{competitor.name}</h3>
                             <Badge variant={competitor.name === 'TechFlow AI' ? 'default' : 'outline'}>
                               {competitor.position}
@@ -346,7 +227,7 @@ export function CompetitiveAnalysis() {
                                 Our Company
                               </Badge>
                             )}
-                          </div>
+                          </div> */}
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center space-x-1">
                               <Building2 className="h-4 w-4" />
@@ -362,7 +243,7 @@ export function CompetitiveAnalysis() {
                             </div>
                             <div className="flex items-center space-x-1">
                               <DollarSign className="h-4 w-4" />
-                              <span>{competitor.funding}</span>
+                              <span>{competitor.funding} funding</span>
                             </div>
                           </div>
                         </div>
@@ -380,9 +261,9 @@ export function CompetitiveAnalysis() {
                               {competitor.trend === 'stable' && <Activity className="h-4 w-4" />}
                             </div>
                           </div>
-                          <div className="text-sm text-muted-foreground mb-1">
+                          {/* <div className="text-sm text-muted-foreground mb-1">
                             {competitor.marketShare} market share
-                          </div>
+                          </div> */}
                           <div className="font-semibold">{competitor.revenue} revenue</div>
                         </div>
                       </div>
@@ -417,7 +298,7 @@ export function CompetitiveAnalysis() {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between">
+                      {/* <div className="flex items-center justify-between">
                         <Button variant="outline" size="sm">
                           <ExternalLink className="h-4 w-4 mr-1" />
                           View Profile
@@ -425,58 +306,7 @@ export function CompetitiveAnalysis() {
                         <Button variant="ghost" size="sm">
                           Deep Analysis
                         </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="benchmarks" className="space-y-6">
-          <div className="space-y-6">
-            {competitiveMetrics.map((metric, index) => (
-              <Card key={index}>
-                <CardHeader>
-                  <CardTitle>{metric.metric}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">TechFlow AI</span>
-                      <div className="flex items-center space-x-2">
-                        <Progress value={metric.techflow} className="w-32 h-2" />
-                        <span className="font-semibold text-blue-600">{metric.techflow}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">AI Innovations</span>
-                      <div className="flex items-center space-x-2">
-                        <Progress value={metric.aiInnovations} className="w-32 h-2" />
-                        <span className="font-medium">{metric.aiInnovations}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">DataMind Corp</span>
-                      <div className="flex items-center space-x-2">
-                        <Progress value={metric.datamind} className="w-32 h-2" />
-                        <span className="font-medium">{metric.datamind}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Neural Systems</span>
-                      <div className="flex items-center space-x-2">
-                        <Progress value={metric.neural} className="w-32 h-2" />
-                        <span className="font-medium">{metric.neural}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Quantum Analytics</span>
-                      <div className="flex items-center space-x-2">
-                        <Progress value={metric.quantum} className="w-32 h-2" />
-                        <span className="font-medium">{metric.quantum}</span>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 </CardContent>
@@ -495,10 +325,13 @@ export function CompetitiveAnalysis() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                {swotAnalysis.strengths.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No strengths identified</p>
+                )}
                 {swotAnalysis.strengths.map((strength, index) => (
                   <div key={index} className="flex items-start space-x-2">
                     <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <p className="text-sm text-muted-foreground">{strength}</p>
+                    <p className="text-sm text-muted-foreground">{typeof strength === 'string' ? strength : strength.description || strength.title || JSON.stringify(strength)}</p>
                   </div>
                 ))}
               </CardContent>
@@ -512,10 +345,13 @@ export function CompetitiveAnalysis() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                {swotAnalysis.weaknesses.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No weaknesses identified</p>
+                )}
                 {swotAnalysis.weaknesses.map((weakness, index) => (
                   <div key={index} className="flex items-start space-x-2">
                     <div className="w-1.5 h-1.5 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <p className="text-sm text-muted-foreground">{weakness}</p>
+                    <p className="text-sm text-muted-foreground">{typeof weakness === 'string' ? weakness : weakness.description || weakness.title || JSON.stringify(weakness)}</p>
                   </div>
                 ))}
               </CardContent>
@@ -529,10 +365,13 @@ export function CompetitiveAnalysis() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                {swotAnalysis.opportunities.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No opportunities identified</p>
+                )}
                 {swotAnalysis.opportunities.map((opportunity, index) => (
                   <div key={index} className="flex items-start space-x-2">
                     <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <p className="text-sm text-muted-foreground">{opportunity}</p>
+                    <p className="text-sm text-muted-foreground">{typeof opportunity === 'string' ? opportunity : opportunity.description || opportunity.title || JSON.stringify(opportunity)}</p>
                   </div>
                 ))}
               </CardContent>
@@ -546,10 +385,13 @@ export function CompetitiveAnalysis() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                {swotAnalysis.threats.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No threats identified</p>
+                )}
                 {swotAnalysis.threats.map((threat, index) => (
                   <div key={index} className="flex items-start space-x-2">
                     <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <p className="text-sm text-muted-foreground">{threat}</p>
+                    <p className="text-sm text-muted-foreground">{typeof threat === 'string' ? threat : threat.description || threat.title || JSON.stringify(threat)}</p>
                   </div>
                 ))}
               </CardContent>
@@ -558,72 +400,80 @@ export function CompetitiveAnalysis() {
         </TabsContent>
 
         <TabsContent value="advantages" className="space-y-6">
-          <div className="space-y-6">
-            {competitiveAdvantages.map((advantage, index) => (
-              <Card key={index} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start space-x-4">
-                    <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
-                      <Zap className="h-6 w-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-lg font-semibold">{advantage.advantage}</h3>
-                        <Badge 
-                          variant={advantage.sustainability === 'High' ? 'default' : 'secondary'}
-                          className={advantage.sustainability === 'High' ? 'bg-green-100 text-green-800' : ''}
-                        >
-                          {advantage.sustainability} Sustainability
-                        </Badge>
-                      </div>
-                      <p className="text-muted-foreground mb-4">{advantage.description}</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <h4 className="font-medium text-sm mb-1">Time to Replicate</h4>
-                          <p className="text-sm text-muted-foreground">{advantage.timeToReplicate}</p>
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-sm mb-1">Supporting Evidence</h4>
-                          <p className="text-sm text-muted-foreground">{advantage.evidence}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            {/* Threat Analysis */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold">Competitive Threats</h2>
-              {threats.map((threat, index) => (
-                <Card key={index} className="border-l-4 border-l-orange-500">
-                  <CardContent className="p-6">
-                    <div className="flex items-start space-x-4">
-                      <AlertTriangle className="h-6 w-6 text-orange-500 flex-shrink-0 mt-1" />
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="font-semibold">{threat.threat}</h3>
-                          <Badge variant="outline">{threat.probability} Probability</Badge>
-                          <Badge variant={threat.impact === 'Very High' || threat.impact === 'High' ? 'destructive' : 'secondary'}>
-                            {threat.impact} Impact
-                          </Badge>
-                        </div>
-                        <p className="text-muted-foreground text-sm mb-3">{threat.description}</p>
-                        <div className="bg-muted/50 rounded-lg p-3">
-                          <p className="text-sm"><strong>Mitigation:</strong> {threat.mitigation}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+          <Card className="border-l-4 border-l-green-500">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Zap className="h-5 w-5 text-green-500" />
+                <span>Competitive Advantages</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {competitiveAdvantages.length === 0 && (
+                <p className="text-sm text-muted-foreground">No competitive advantages identified</p>
+              )}
+              {competitiveAdvantages.map((advantage: any, index: number) => (
+                <div key={index} className="flex items-start space-x-2">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                  <p className="text-sm text-muted-foreground">{typeof advantage === 'string' ? advantage : advantage.description || advantage.title || advantage.name || JSON.stringify(advantage)}</p>
+                </div>
               ))}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="threats" className="space-y-6">
+          <Card className="border-l-4 border-l-red-500">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <AlertTriangle className="h-5 w-5 text-red-500" />
+                <span>Competitive Threats</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {competitiveThreats.length === 0 && (
+                <p className="text-sm text-muted-foreground">No competitive threats identified</p>
+              )}
+              {competitiveThreats.map((threat: any, index: number) => (
+                <div key={index} className="flex items-start space-x-2">
+                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
+                  <p className="text-sm text-muted-foreground">{typeof threat === 'string' ? threat : threat.description || threat.title || threat.name || JSON.stringify(threat)}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="differentiation" className="space-y-6">
+          <Card className="border-l-4 border-l-blue-500">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Star className="h-5 w-5 text-blue-500" />
+                <span>Differentiation Factors</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {differentiationFactors.length === 0 && (
+                <p className="text-sm text-muted-foreground">No differentiation factors identified</p>
+              )}
+              {differentiationFactors.map((factor: any, index: number) => (
+                <div key={index} className="flex items-start space-x-2">
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                  <p className="text-sm text-muted-foreground">{typeof factor === 'string' ? factor : factor.description || factor.title || factor.name || JSON.stringify(factor)}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="strategy" className="space-y-6">
           <div className="space-y-6">
+            {strategicRecommendations.length === 0 && (
+              <Card>
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  No strategic recommendations available
+                </CardContent>
+              </Card>
+            )}
             {strategicRecommendations.map((category, index) => (
               <Card key={index}>
                 <CardHeader>
@@ -645,52 +495,6 @@ export function CompetitiveAnalysis() {
               </Card>
             ))}
           </div>
-
-          {/* AI Strategic Insights */}
-          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border-blue-200/50 dark:border-blue-700/50">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Sparkles className="h-5 w-5 text-blue-500" />
-                <span>AI Strategic Insights</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-white/50 dark:bg-black/20 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-800 dark:text-blue-200 mb-1">18 months</div>
-                  <div className="text-sm text-blue-600 dark:text-blue-300">Optimal window for aggressive growth</div>
-                </div>
-                <div className="text-center p-4 bg-white/50 dark:bg-black/20 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-800 dark:text-blue-200 mb-1">3x</div>
-                  <div className="text-sm text-blue-600 dark:text-blue-300">Potential market share growth</div>
-                </div>
-                <div className="text-center p-4 bg-white/50 dark:bg-black/20 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-800 dark:text-blue-200 mb-1">85%</div>
-                  <div className="text-sm text-blue-600 dark:text-blue-300">Success probability with current strategy</div>
-                </div>
-              </div>
-              <div className="space-y-3 pt-4 border-t border-blue-200/50 dark:border-blue-700/50">
-                <div className="flex items-start space-x-3">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    Market analysis indicates optimal timing for Series B funding round within next 12 months
-                  </p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    Competitive positioning suggests focus on enterprise segment will yield highest returns
-                  </p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
-                    Technical moat strength provides 18-24 month lead time advantage over closest competitors
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
