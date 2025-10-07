@@ -3,7 +3,7 @@ module.exports = {
     name: 'alphaint-backend',
     script: '.venv/bin/gunicorn',
     args: 'core.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120',
-    cwd: '/home/ec2-user/ai-investment-analysis-platform/backend',
+    // cwd will use current directory where pm2 is executed (should be backend/)
     interpreter: 'none',
     instances: 1,
     autorestart: true,

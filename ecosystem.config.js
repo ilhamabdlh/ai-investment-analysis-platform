@@ -5,7 +5,7 @@ module.exports = {
       name: 'alphaint-frontend',
       script: 'serve',
       args: '-s dist -l 80',
-      cwd: '/home/ec2-user/ai-investment-analysis-platform',
+      // cwd will use current directory where pm2 is executed
       instances: 1,
       autorestart: true,
       watch: false,
@@ -24,7 +24,7 @@ module.exports = {
       name: 'alphaint-frontend-dev',
       script: 'npm',
       args: 'run dev -- --host 0.0.0.0 --port 5173',
-      cwd: '/home/ec2-user/ai-investment-analysis-platform',
+      // cwd will use current directory where pm2 is executed
       instances: 1,
       autorestart: true,
       watch: false,
