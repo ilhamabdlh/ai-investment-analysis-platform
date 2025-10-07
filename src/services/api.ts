@@ -1,8 +1,11 @@
 import axios from 'axios'
 
+// Get API base URL from environment variable or use default
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://13.55.197.252:8000/api'
+
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: 'https://api.teoremaintelligence.com/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },

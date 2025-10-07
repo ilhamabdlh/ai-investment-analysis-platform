@@ -28,6 +28,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
+    '13.55.197.252',  # Backend server IP
     'api.teoremaintelligence.com',
     'teoremaintelligence.com',
     'www.teoremaintelligence.com',
@@ -156,6 +157,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:5173",  # Vite default dev server
+    "http://52.62.143.205",  # Frontend server IP
+    "http://52.62.143.205:80",
+    "http://52.62.143.205:5173",
+    "https://52.62.143.205",
     "https://teoremaintelligence.com",
     "https://www.teoremaintelligence.com",
     "https://app.teoremaintelligence.com",
