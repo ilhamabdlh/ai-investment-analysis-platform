@@ -36,10 +36,10 @@ export function Login({ onLogin }: LoginProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-4">
-      <Card className="w-full max-w-sm shadow-xl">
-        <CardHeader className="text-center space-y-4 pb-4">
-          <div className="flex items-center justify-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+      <Card className="w-full max-w-xs shadow-xl">
+        <CardHeader className="text-center space-y-3 pb-3 pt-5">
+          <div className="flex items-center justify-center space-x-1.5">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
               <img 
                 src="/favicon_alphaint.png" 
                 alt="AlphaInt Logo" 
@@ -47,43 +47,43 @@ export function Login({ onLogin }: LoginProps) {
               />
             </div>
             <div className="text-left">
-              <h1 className="text-xl font-bold">AlphaInt</h1>
-              <p className="text-xs text-muted-foreground">Investment Intelligence</p>
+              <h1 className="text-lg font-bold">AlphaInt</h1>
+              <p className="text-[10px] text-muted-foreground">Investment Intelligence</p>
             </div>
           </div>
           <div>
-            <CardTitle className="flex items-center justify-center space-x-2 text-lg">
-              <Sparkles className="h-4 w-4 text-blue-500" />
+            <CardTitle className="flex items-center justify-center space-x-1.5 text-base">
+              <Sparkles className="h-3.5 w-3.5 text-blue-500" />
               <span>Welcome Back</span>
             </CardTitle>
-            <p className="text-muted-foreground text-xs mt-1">
-              Sign in to access your investment analysis dashboard
+            <p className="text-muted-foreground text-[11px] mt-0.5">
+              Sign in to access your dashboard
             </p>
           </div>
         </CardHeader>
-        <CardContent className="pt-0">
-          <form onSubmit={handleSubmit} className="space-y-3">
+        <CardContent className="pt-0 px-5 pb-5">
+          <form onSubmit={handleSubmit} className="space-y-2.5">
             {error && (
-              <Alert variant="destructive" className="py-2">
-                <AlertDescription className="text-sm">{error}</AlertDescription>
+              <Alert variant="destructive" className="py-1.5">
+                <AlertDescription className="text-xs">{error}</AlertDescription>
               </Alert>
             )}
             
-            <div className="space-y-1.5">
-              <Label htmlFor="username" className="text-sm">Username</Label>
+            <div className="space-y-1">
+              <Label htmlFor="username" className="text-xs">Username</Label>
               <Input
                 id="username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter your username"
-                className="h-9"
+                className="h-8 text-sm"
                 required
               />
             </div>
             
-            <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-sm">Password</Label>
+            <div className="space-y-1">
+              <Label htmlFor="password" className="text-xs">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -91,29 +91,29 @@ export function Login({ onLogin }: LoginProps) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="h-9 pr-10"
+                  className="h-8 pr-9 text-sm"
                   required
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-9 px-2 hover:bg-transparent"
+                  className="absolute right-0 top-0 h-8 px-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+                    <EyeOff className="h-3 w-3 text-muted-foreground" />
                   ) : (
-                    <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Eye className="h-3 w-3 text-muted-foreground" />
                   )}
                 </Button>
               </div>
             </div>
             
-            <Button type="submit" className="w-full h-9 mt-4" disabled={loading}>
+            <Button type="submit" className="w-full h-8 mt-3 text-sm" disabled={loading}>
               {loading ? (
                 <>
-                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white mr-2"></div>
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-1.5"></div>
                   Signing in...
                 </>
               ) : (
@@ -122,8 +122,8 @@ export function Login({ onLogin }: LoginProps) {
             </Button>
           </form>
           
-          <div className="mt-4 text-center">
-            <p className="text-xs text-muted-foreground">
+          <div className="mt-3 text-center">
+            <p className="text-[10px] text-muted-foreground">
               Demo credentials: admin / admin
             </p>
           </div>
