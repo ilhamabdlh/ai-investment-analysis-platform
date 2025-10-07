@@ -157,13 +157,13 @@ export function Sidebar({ activeView, onViewChange, onLogout }: SidebarProps) {
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-lg p-4 border border-blue-200/50 dark:border-blue-700/50">
           <div className="flex items-center space-x-2 mb-2">
             <Sparkles className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-900 dark:text-blue-100">AI Assistant</span>
+            <span className="text-sm font-medium text-blue-900 dark:text-blue-100">AI Assistant Coming Soon!</span>
           </div>
           <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
             Get instant insights and analysis powered by advanced AI models
           </p>
           <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-            Ask AI
+            Ask AI Soon!
           </Button>
         </div>
       </div>

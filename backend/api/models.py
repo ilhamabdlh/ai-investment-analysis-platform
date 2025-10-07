@@ -659,15 +659,201 @@ class MarketAnalysis(Analysis):
     # Market specific fields
     market_size = models.CharField(max_length=255, blank=True, help_text="Total addressable market size")
     market_growth_rate = models.FloatField(null=True, blank=True, help_text="Market growth rate percentage")
-    competitive_landscape = models.JSONField(default=list, help_text="Competitive landscape analysis")
-    market_trends = models.JSONField(default=list, help_text="Current market trends")
-    barriers_to_entry = models.JSONField(default=list, help_text="Barriers to market entry")
+    revenue_note = models.TextField(blank=True, help_text="Notes/caveats about revenue figures (e.g., year range, estimates)")
+    
+    # Legacy JSON fields (deprecated - use structured models below)
+    competitive_landscape = models.JSONField(
+        default=list, 
+        blank=True,
+        help_text="DEPRECATED: Use structured models instead. Competitive landscape analysis"
+    )
+    market_trends = models.JSONField(
+        default=list, 
+        blank=True,
+        help_text="DEPRECATED: Use structured models instead. Current market trends"
+    )
+    barriers_to_entry = models.JSONField(
+        default=list, 
+        blank=True,
+        help_text="DEPRECATED: Use structured models instead. Barriers to market entry"
+    )
     
     class Meta:
         verbose_name = "Market Analysis"
         verbose_name_plural = "Market Analyses"
         ordering = ['-created_at']
 
+
+# Structured models for Market Analysis
+
+class RevenueInformation(models.Model):
+    """Publicly available revenue information and financial data points"""
+    
+    RELIABILITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('verified', 'Verified'),
+    ]
+    
+    analysis = models.ForeignKey(MarketAnalysis, on_delete=models.CASCADE, related_name='revenue_information')
+    
+    # Information details
+    title = models.CharField(max_length=500, help_text="Title describing the revenue information")
+    source = models.CharField(max_length=255, help_text="Source (e.g., 'Annual Report', 'TechCrunch', 'Investor Deck')")
+    date = models.DateField(help_text="Date of publication or report")
+    url = models.URLField(blank=True, help_text="Link to the original source")
+    
+    # Revenue data
+    revenue_figure = models.CharField(
+        max_length=100,
+        help_text="Revenue figure (e.g., '$10M ARR', '$50M Series A')"
+    )
+    description = models.TextField(help_text="Details and context about this revenue information")
+    
+    # Reliability and confidence
+    reliability = models.CharField(
+        max_length=20,
+        choices=RELIABILITY_CHOICES,
+        default='medium',
+        help_text="Reliability/confidence level of this information"
+    )
+    
+    # Metrics (optional)
+    growth_rate = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Growth rate if mentioned (e.g., '+125% YoY')"
+    )
+    
+    # Ordering
+    display_order = models.IntegerField(default=0, help_text="Order in which to display revenue items")
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['display_order', '-date']
+        verbose_name = "Revenue Information"
+        verbose_name_plural = "Revenue Information"
+    
+    def __str__(self):
+        return f"{self.title} - {self.revenue_figure} ({self.source})"
+    
+    @property
+    def date_display(self):
+        """Return a human-readable date"""
+        from django.utils import timezone
+        
+        today = timezone.now().date()
+        delta = today - self.date
+        
+        if delta.days == 0:
+            return "Today"
+        elif delta.days == 1:
+            return "Yesterday"
+        elif delta.days < 7:
+            return f"{delta.days} days ago"
+        elif delta.days < 30:
+            weeks = delta.days // 7
+            return f"{weeks} week{'s' if weeks > 1 else ''} ago"
+        elif delta.days < 365:
+            months = delta.days // 30
+            return f"{months} month{'s' if months > 1 else ''} ago"
+        else:
+            return self.date.strftime("%b %d, %Y")
+
+
+class MarketForce(models.Model):
+    """Porter's Five Forces style market dynamics for a market analysis"""
+
+    INTENSITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+    ]
+
+    analysis = models.ForeignKey(MarketAnalysis, on_delete=models.CASCADE, related_name='market_forces')
+
+    # Force details
+    force_name = models.CharField(max_length=255, help_text="Force name (e.g., 'Competitive Rivalry')")
+    intensity = models.CharField(max_length=10, choices=INTENSITY_CHOICES, default='medium')
+    score = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)], help_text="Force intensity score (0-100)")
+    description = models.TextField(blank=True, help_text="Summary of the force dynamics")
+    factors = models.JSONField(default=list, help_text="Key factors list")
+
+    # Ordering
+    display_order = models.IntegerField(default=0, help_text="Order in which to display market forces")
+
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['display_order', '-score', 'force_name']
+        verbose_name = "Market Force"
+        verbose_name_plural = "Market Forces"
+
+    def __str__(self):
+        return f"{self.force_name} ({self.get_intensity_display()})"
+
+
+class SalesChannel(models.Model):
+    """Sales and distribution channels for the product (App stores, Direct, Partners)"""
+
+    analysis = models.ForeignKey(MarketAnalysis, on_delete=models.CASCADE, related_name='sales_channels')
+
+    platform_name = models.CharField(max_length=255, help_text="Platform or channel name (e.g., App Store, Direct Sales)")
+    url = models.URLField(blank=True)
+
+    count_unit = models.CharField(max_length=50, blank=True, help_text="Unit for count metric (e.g., 'Installs', 'Transactions', 'Products')")
+    installs_count = models.CharField(max_length=50, blank=True, help_text="Primary count for this channel (e.g., '120K')")
+    revenue_amount = models.CharField(max_length=50, blank=True, help_text="Revenue amount for the channel")
+    rating = models.FloatField(null=True, blank=True)
+    reviews_count = models.IntegerField(null=True, blank=True)
+    change_percentage = models.FloatField(null=True, blank=True)
+
+    display_order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['display_order', '-updated_at', 'platform_name']
+        verbose_name = "Sales Channel"
+        verbose_name_plural = "Sales Channels"
+
+    def __str__(self):
+        return self.platform_name
+
+
+class IndustryTrend(models.Model):
+    """Structured industry trend items for the Industry Trends tab"""
+
+    IMPACT_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+    ]
+
+    analysis = models.ForeignKey(MarketAnalysis, on_delete=models.CASCADE, related_name='industry_trends_items')
+
+    title = models.CharField(max_length=255, help_text="Trend title")
+    impact = models.CharField(max_length=10, choices=IMPACT_CHOICES, default='medium')
+    relevance = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)], help_text="Relevance score (0-100)")
+    description = models.TextField(blank=True)
+
+    display_order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['display_order', '-relevance', 'title']
+        verbose_name = "Industry Trend"
+        verbose_name_plural = "Industry Trends"
+
+    def __str__(self):
+        return self.title
 
 class KeyIndividualsAnalysis(Analysis):
     """Key individuals and executive team analysis"""

@@ -25,7 +25,13 @@ SECRET_KEY = 'django-insecure-&h0yxm373ww^867zgywj$tet3me&emhj(!w1liwf2snyjx(huo
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'api.teoremaintelligence.com',
+    'teoremaintelligence.com',
+    'www.teoremaintelligence.com',
+]
 
 
 # Application definition
@@ -42,6 +48,7 @@ INSTALLED_APPS = [
     'corsheaders',
     # 'django_filters',  # Uncomment after installing django-filter
     'api',
+    'import_export',
 ]
 
 MIDDLEWARE = [
@@ -148,9 +155,13 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:5173",  # Vite default dev server
+    "https://teoremaintelligence.com",
+    "https://www.teoremaintelligence.com",
+    "https://app.teoremaintelligence.com",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
 
 # Allow all headers and methods for development
-CORS_ALLOW_ALL_ORIGINS = True  # Only for development
+CORS_ALLOW_ALL_ORIGINS = True  # Only for development - set to False in production

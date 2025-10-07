@@ -5,7 +5,8 @@ from .models import (
     HighLevelAnalysis, PerceptionAnalysis, MarketAnalysis, 
     KeyIndividualsAnalysis, CompetitiveAnalysis,
     KeyIndividual, IndividualRisk, PublicMention, Competitor, StrategicRecommendation,
-    SentimentBySource, CompetitorSentiment, RecentMention, KeyTopic, BrandMetric, RiskAlert
+    SentimentBySource, CompetitorSentiment, RecentMention, KeyTopic, BrandMetric, RiskAlert,
+    RevenueInformation, MarketForce, SalesChannel, IndustryTrend
 )
 
 class CompanyTagSerializer(serializers.ModelSerializer):
@@ -149,6 +150,45 @@ class RiskAlertSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'border_color', 'icon_color', 'created_at', 'updated_at']
 
+class RevenueInformationSerializer(serializers.ModelSerializer):
+    date_display = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = RevenueInformation
+        fields = [
+            'id', 'title', 'source', 'date', 'date_display', 'url', 'revenue_figure',
+            'description', 'reliability', 'growth_rate', 'display_order',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'date_display', 'created_at', 'updated_at']
+
+class MarketForceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MarketForce
+        fields = [
+            'id', 'force_name', 'intensity', 'score', 'description', 'factors',
+            'display_order', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+class SalesChannelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SalesChannel
+        fields = [
+            'id', 'platform_name', 'url', 'count_unit', 'installs_count', 'revenue_amount',
+            'rating', 'reviews_count', 'change_percentage', 'display_order',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+class IndustryTrendSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IndustryTrend
+        fields = [
+            'id', 'title', 'impact', 'relevance', 'description', 'display_order', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
 # Base analysis serializer
 class BaseAnalysisSerializer(serializers.ModelSerializer):
     analyst_name = serializers.CharField(source='analyst.username', read_only=True)
@@ -187,11 +227,16 @@ class PerceptionAnalysisSerializer(BaseAnalysisSerializer):
         ]
 
 class MarketAnalysisSerializer(BaseAnalysisSerializer):
+    revenue_information = RevenueInformationSerializer(many=True, read_only=True)
+    market_forces = MarketForceSerializer(many=True, read_only=True)
+    sales_channels = SalesChannelSerializer(many=True, read_only=True)
+    industry_trends_items = IndustryTrendSerializer(many=True, read_only=True)
+    
     class Meta(BaseAnalysisSerializer.Meta):
         model = MarketAnalysis
         fields = BaseAnalysisSerializer.Meta.fields + [
-            'market_size', 'market_growth_rate', 'competitive_landscape', 
-            'market_trends', 'barriers_to_entry'
+            'market_size', 'market_growth_rate', 'revenue_information', 'market_forces', 'sales_channels', 'industry_trends_items',
+            'competitive_landscape', 'market_trends', 'barriers_to_entry'
         ]
 
 class KeyIndividualsAnalysisSerializer(BaseAnalysisSerializer):

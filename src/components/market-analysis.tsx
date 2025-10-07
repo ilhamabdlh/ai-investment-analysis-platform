@@ -56,23 +56,34 @@ export function MarketAnalysis() {
   }, [analysisData])
 
   const companyName = analysisData?.company?.name || '—'
+  
+  // Structured data from new models
+  const revenueInformation = useMemo(() => {
+    const data = market?.revenue_information
+    return Array.isArray(data) ? data : []
+  }, [market])
+
   const marketData = {
-    estimatedRevenue: market?.metrics?.find((m: any) => m.name?.toLowerCase().includes('revenue'))?.value || '-',
-    revenueGrowth: `${market?.metrics?.find((m: any) => m.name?.toLowerCase().includes('growth'))?.change_percentage ?? ''}%`,
-    marketShare: market?.metrics?.find((m: any) => m.name?.toLowerCase().includes('market share'))?.value || '-',
-    marketShareTrend: market?.metrics?.find((m: any) => m.name?.toLowerCase().includes('market share'))?.trend || 'stable',
-    totalAddressableMarket: market?.metrics?.find((m: any) => m.name?.toLowerCase().includes('tam'))?.value || '-',
-    servicableMarket: market?.metrics?.find((m: any) => m.name?.toLowerCase().includes('sam'))?.value || '-',
+    marketSize: market?.market_size || '-',
+    marketGrowthRate: market?.market_growth_rate ? `${market.market_growth_rate}%` : '-',
     confidenceScore: Math.round(((market?.confidence_score ?? 0) * 100)),
   }
 
-  const revenueBreakdown = (market?.metrics || []).filter((m: any) => m.category === 'financial')
-  const marketMetrics = (market?.metrics || []).filter((m: any) => m.category === 'market')
-  const competitorRevenue = (analysisData?.competitive_analyses || []).flatMap((a: any) => a.metrics || [])
-  const salesData = (market?.metrics || []).filter((m: any) => (m.name || '').toLowerCase().includes('marketplace'))
-  const marketInsights = market?.key_findings || []
-  const industryTrends = market?.opportunities || []
-  const marketForces = market?.risk_factors || []
+  // Legacy JSON field support
+  const salesData = useMemo(() => {
+    const data = market?.sales_channels
+    return Array.isArray(data) ? data : []
+  }, [market])
+  const marketInsights = (market?.market_trends || [])
+  const industryTrends = useMemo(() => {
+    const data = market?.industry_trends_items
+    return Array.isArray(data) ? data : []
+  }, [market])
+  const marketForces = useMemo(() => {
+    const data = market?.market_forces
+    return Array.isArray(data) ? data : []
+  }, [market])
+  
 
   return (
     <div className="p-6 space-y-6">
@@ -110,50 +121,34 @@ export function MarketAnalysis() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200/50 dark:border-green-700/50">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-3 mb-2">
-              <DollarSign className="h-5 w-5 text-green-600" />
-              <span className="text-sm font-medium text-green-700 dark:text-green-300">Estimated Revenue</span>
-            </div>
-            <div className="text-2xl font-bold text-green-800 dark:text-green-200 mb-1">
-              {marketData.estimatedRevenue}
-            </div>
-            <div className="flex items-center space-x-1 text-sm text-green-600">
-              <ArrowUpRight className="h-4 w-4" />
-              <span>{marketData.revenueGrowth || ''} YoY</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/30 dark:to-cyan-950/30 border-blue-200/50 dark:border-blue-700/50">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-3 mb-2">
-              <PieChart className="h-5 w-5 text-blue-600" />
-              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Market Share</span>
-            </div>
-            <div className="text-2xl font-bold text-blue-800 dark:text-blue-200 mb-1">
-              {marketData.marketShare}
-            </div>
-            <div className="flex items-center space-x-1 text-sm text-blue-600">
-              <ArrowUpRight className="h-4 w-4" />
-              <span>Growing rapidly</span>
-            </div>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950/30 dark:to-violet-950/30 border-purple-200/50 dark:border-purple-700/50">
           <CardContent className="p-6">
             <div className="flex items-center space-x-3 mb-2">
               <Globe className="h-5 w-5 text-purple-600" />
-              <span className="text-sm font-medium text-purple-700 dark:text-purple-300">TAM</span>
+              <span className="text-sm font-medium text-purple-700 dark:text-purple-300">Market Size</span>
             </div>
             <div className="text-2xl font-bold text-purple-800 dark:text-purple-200 mb-1">
-              {marketData.totalAddressableMarket}
+              {marketData.marketSize}
             </div>
             <div className="text-sm text-purple-600">
-              {marketData.servicableMarket} SAM
+              Total addressable market
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200/50 dark:border-green-700/50">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3 mb-2">
+              <TrendingUp className="h-5 w-5 text-green-600" />
+              <span className="text-sm font-medium text-green-700 dark:text-green-300">Growth Rate</span>
+            </div>
+            <div className="text-2xl font-bold text-green-800 dark:text-green-200 mb-1">
+              {marketData.marketGrowthRate}
+            </div>
+            <div className="flex items-center space-x-1 text-sm text-green-600">
+              <ArrowUpRight className="h-4 w-4" />
+              <span>Market growth</span>
             </div>
           </CardContent>
         </Card>
@@ -176,95 +171,93 @@ export function MarketAnalysis() {
 
       {/* Analysis Tabs */}
       <Tabs defaultValue="revenue" className="space-y-6">
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-4 w-full">
           <TabsTrigger value="revenue">Revenue Analysis</TabsTrigger>
           <TabsTrigger value="market">Market Dynamics</TabsTrigger>
-          <TabsTrigger value="competitors">Competitive Position</TabsTrigger>
           <TabsTrigger value="sales">Sales Channels</TabsTrigger>
           <TabsTrigger value="trends">Industry Trends</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="revenue" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Revenue Breakdown */}
+        <TabsContent value="revenue" className="space-y-4">
+          {/* Revenue Information - Same style as Recent Mentions */}
+          {revenueInformation.length === 0 && (
             <Card>
-              <CardHeader>
-                <CardTitle>Revenue Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {revenueBreakdown.map((item: any, index: number) => (
-                  <div key={index} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{item.name}</span>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-semibold">{item.value}</span>
-                        <Badge variant="outline" className="text-xs">
-                          {item.change_percentage != null ? `${item.change_percentage}%` : ''}
-                        </Badge>
-                      </div>
-                    </div>
-                    <Progress value={item.score ?? 0} className="h-2" />
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{item.score ?? 0}% of total</span>
-                      {item.change_percentage != null && <span>{item.change_percentage}% vs last period</span>}
-                    </div>
-                  </div>
-                ))}
+              <CardContent className="p-6 text-center text-muted-foreground">
+                No revenue information available
               </CardContent>
             </Card>
-
-            {/* Market Metrics */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Market Metrics</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {marketMetrics.map((metric: any, index: number) => (
-                  <div key={index} className="p-4 bg-muted/50 rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium">{metric.name}</h4>
-                      <div className="flex items-center space-x-1 text-green-600">
-                        <ArrowUpRight className="h-4 w-4" />
+          )}
+          {revenueInformation.map((item: any, index: number) => (
+            <Card key={index} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <h3 className="font-semibold">{item.title}</h3>
+                      <Badge 
+                        variant={item.reliability === 'verified' ? "default" : "secondary"}
+                        className="text-xs"
+                      >
+                        {item.reliability.charAt(0).toUpperCase() + item.reliability.slice(1)}
+                      </Badge>
+                      <div className="text-sm font-medium text-green-600">
+                        {item.revenue_figure}
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-sm">
-                      <div className="text-center">
-                        <div className="font-semibold">{metric.value}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {metric.category}
-                        </div>
+                    <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-3">
+                      <span className="font-medium">{item.source}</span>
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>{item.date_display || item.date}</span>
                       </div>
+                      {item.growth_rate && <span className="text-green-600">{item.growth_rate}</span>}
                     </div>
-                    <div className="mt-2 text-xs text-muted-foreground">
-                      Change: {metric.change_percentage != null ? `${metric.change_percentage}%` : '—'}
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {item.description}
+                    </p>
+                    <div className="flex items-center space-x-2">
+                      {item.url && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => window.open(item.url, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          View Source
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="sm">
+                        <BarChart3 className="h-4 w-4 mr-1" />
+                        Analyze
+                      </Button>
                     </div>
                   </div>
-                ))}
+                </div>
               </CardContent>
             </Card>
-          </div>
+          ))}
         </TabsContent>
 
         <TabsContent value="market" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {marketForces.map((force, index) => (
+            {marketForces.map((force: any, index: number) => (
               <Card key={index}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{force.force}</CardTitle>
+                    <CardTitle className="text-lg">{force.force_name}</CardTitle>
                     <Badge 
-                      variant={force.intensity === 'High' ? 'destructive' : force.intensity === 'Medium' ? 'secondary' : 'outline'}
+                      variant={force.intensity === 'high' ? 'destructive' : force.intensity === 'medium' ? 'secondary' : 'outline'}
                     >
-                      {force.intensity}
+                      {typeof force.intensity === 'string' ? force.intensity.charAt(0).toUpperCase() + force.intensity.slice(1) : force.intensity}
                     </Badge>
                   </div>
-                  <Progress value={force.score} className="h-2" />
+                  <Progress value={force.score ?? 0} className="h-2" />
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground mb-3">{force.description}</p>
                   <div className="space-y-1">
                     <h4 className="font-medium text-sm">Key Factors:</h4>
-                    {force.factors.map((factor, factorIndex) => (
+                    {(force.factors || []).map((factor: any, factorIndex: number) => (
                       <div key={factorIndex} className="flex items-center space-x-2">
                         <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
                         <span className="text-sm text-muted-foreground">{factor}</span>
@@ -277,36 +270,7 @@ export function MarketAnalysis() {
           </div>
         </TabsContent>
 
-        <TabsContent value="competitors" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Competitive Revenue Analysis</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {competitorRevenue.map((competitor: any, index: number) => (
-                <div key={index} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="text-lg font-medium">{index + 1}</div>
-                    <div>
-                      <div className={`font-medium`}>
-                        {competitor.name || competitor.title}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Value: {competitor.value}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-semibold">{competitor.score ?? 0}</div>
-                    <div className={`text-sm ${Number(competitor.change_percentage) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {competitor.change_percentage != null ? `${competitor.change_percentage}%` : ''} change
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
+        
 
         <TabsContent value="sales" className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -314,20 +278,22 @@ export function MarketAnalysis() {
               <Card key={index}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold">{platform.name || platform.platform}</h3>
-                    <Button variant="outline" size="sm">
+                    <h3 className="font-semibold">{platform.platform_name}</h3>
+                    {platform.url && (
+                      <Button variant="outline" size="sm" onClick={() => window.open(platform.url, '_blank')}>
                       <ExternalLink className="h-4 w-4 mr-1" />
                       View
-                    </Button>
+                      </Button>
+                    )}
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="text-center p-3 bg-muted/50 rounded-lg">
-                      <div className="text-lg font-bold">{platform.installs || '-'}</div>
-                      <div className="text-xs text-muted-foreground">Installs</div>
+                      <div className="text-lg font-bold">{platform.installs_count || '-'}</div>
+                      <div className="text-xs text-muted-foreground">{platform.count_unit || 'Units'}</div>
                     </div>
                     <div className="text-center p-3 bg-muted/50 rounded-lg">
-                      <div className="text-lg font-bold">{platform.revenue || platform.value || '-'}</div>
+                      <div className="text-lg font-bold">{platform.revenue_amount || '-'}</div>
                       <div className="text-xs text-muted-foreground">Revenue</div>
                     </div>
                   </div>
@@ -336,7 +302,7 @@ export function MarketAnalysis() {
                     <div className="flex items-center space-x-2">
                       <Star className="h-4 w-4 text-yellow-500" />
                       <span className="font-medium">{platform.rating ?? '-'}</span>
-                      {platform.reviews && <span className="text-sm text-muted-foreground">({platform.reviews} reviews)</span>}
+                      {platform.reviews_count && <span className="text-sm text-muted-foreground">({platform.reviews_count} reviews)</span>}
                     </div>
                     <Badge variant="outline" className="text-xs">
                       {platform.change_percentage != null ? `${platform.change_percentage}%` : ''}
@@ -356,43 +322,27 @@ export function MarketAnalysis() {
               <Card key={index}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold">{trend.trend || trend.title || 'Trend'}</h3>
+                    <h3 className="font-semibold">{trend.title}</h3>
                     <Badge 
-                      variant={trend.impact === 'High' ? 'default' : 'secondary'}
+                      variant={trend.impact === 'high' ? 'default' : 'secondary'}
                     >
-                      {trend.impact} Impact
+                      {typeof trend.impact === 'string' ? trend.impact.charAt(0).toUpperCase() + trend.impact.slice(1) : trend.impact} Impact
                     </Badge>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Relevance</span>
-                      <span className="font-medium">{trend.relevance ?? trend.score ?? 0}%</span>
+                      <span className="font-medium">{trend.relevance ?? 0}%</span>
                     </div>
-                    <Progress value={trend.relevance ?? trend.score ?? 0} className="h-2" />
-                    <p className="text-sm text-muted-foreground">{trend.description || String(trend)}</p>
+                    <Progress value={trend.relevance ?? 0} className="h-2" />
+                    <p className="text-sm text-muted-foreground">{trend.description}</p>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
 
-          {/* AI Insights */}
-          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border-blue-200/50 dark:border-blue-700/50">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Sparkles className="h-5 w-5 text-blue-500" />
-                <span>AI Market Insights</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {marketInsights.map((insight: any, index: number) => (
-                <div key={index} className="flex items-start space-x-3 p-4 bg-white/50 dark:bg-black/20 rounded-lg">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm text-blue-800 dark:text-blue-200">{typeof insight === 'string' ? insight : (insight?.text || JSON.stringify(insight))}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          
         </TabsContent>
       </Tabs>
     </div>

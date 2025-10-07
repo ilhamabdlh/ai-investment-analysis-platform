@@ -217,7 +217,7 @@ export function CompetitiveAnalysis() {
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-4">
                         <div>
-                          {/* <div className="flex items-center space-x-3 mb-2">
+                          <div className="flex items-center space-x-3 mb-2">
                             <h3 className="text-xl font-semibold">{competitor.name}</h3>
                             <Badge variant={competitor.name === 'TechFlow AI' ? 'default' : 'outline'}>
                               {competitor.position}
@@ -227,7 +227,7 @@ export function CompetitiveAnalysis() {
                                 Our Company
                               </Badge>
                             )}
-                          </div> */}
+                          </div>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center space-x-1">
                               <Building2 className="h-4 w-4" />
