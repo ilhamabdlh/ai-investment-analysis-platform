@@ -1,0 +1,89 @@
+[
+  {
+    "model": "api.company",
+    "pk": "4595deb6-6291-4e3c-bf5d-e39cd98739ad",
+    "fields": {
+      "name": "PT Teknologi Maju Indonesia",
+      "industry": "Technology",
+      "website": "https://teknologimaju.co.id",
+      "description": "Perusahaan teknologi terkemuka di Indonesia yang fokus pada pengembangan software dan digital transformation",
+      "location": "Jakarta, Indonesia",
+      "employee_count": "100-500",
+      "founded_year": 2020,
+      "revenue": "50000000000",
+      "funding_stage": "Series B",
+      "total_funding": "15000000000",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "api.company",
+    "fields": {
+      "name": "PT Startup Inovasi Digital",
+      "industry": "E-commerce",
+      "website": "https://startupinovasi.com",
+      "description": "Platform e-commerce inovatif yang membantu UMKM go digital dengan teknologi modern",
+      "location": "Bandung, Indonesia",
+      "employee_count": "10-50",
+      "founded_year": 2021,
+      "revenue": "5000000000",
+      "funding_stage": "Seed",
+      "total_funding": "2000000000",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "api.company",
+    "fields": {
+      "name": "PT Fintech Solusi",
+      "industry": "Financial Technology",
+      "website": "https://fintechsolusi.id",
+      "description": "Solusi pembayaran digital dan financial inclusion untuk seluruh Indonesia",
+      "location": "Surabaya, Indonesia",
+      "employee_count": "50-100",
+      "founded_year": 2019,
+      "revenue": "20000000000",
+      "funding_stage": "Series A",
+      "total_funding": "8000000000",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "api.company",
+    "fields": {
+      "name": "PT Healthcare Digital",
+      "industry": "Healthcare",
+      "website": "https://healthcaredigital.id",
+      "description": "Platform telemedicine dan digital health records untuk Indonesia",
+      "location": "Jakarta, Indonesia",
+      "employee_count": "50-100",
+      "founded_year": 2020,
+      "revenue": "10000000000",
+      "funding_stage": "Series A",
+      "total_funding": "5000000000",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "api.company",
+    "fields": {
+      "name": "PT EdTech Indonesia",
+      "industry": "Education Technology",
+      "website": "https://edtech-indonesia.com",
+      "description": "Platform pembelajaran online untuk pelajar dan professional di Indonesia",
+      "location": "Yogyakarta, Indonesia",
+      "employee_count": "20-50",
+      "founded_year": 2021,
+      "revenue": "3000000000",
+      "funding_stage": "Seed",
+      "total_funding": "1500000000",
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  }
+]
+
