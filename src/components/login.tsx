@@ -37,9 +37,9 @@ export function Login({ onLogin }: LoginProps) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 p-4">
       <Card className="w-full max-w-xs shadow-xl">
-        <CardHeader className="text-center space-y-3 pb-3 pt-5">
-          <div className="flex items-center justify-center space-x-1.5">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+        <CardHeader className="text-center space-y-3 pb-3 px-4">
+          <div className="flex items-center justify-center space-x-2">
+            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
               <img 
                 src="/favicon_alphaint.png" 
                 alt="AlphaInt Logo" 
@@ -56,12 +56,12 @@ export function Login({ onLogin }: LoginProps) {
               <Sparkles className="h-3.5 w-3.5 text-blue-500" />
               <span>Welcome Back</span>
             </CardTitle>
-            <p className="text-muted-foreground text-[11px] mt-0.5">
+            <p className="text-muted-foreground text-[10px] mt-0.5">
               Sign in to access your dashboard
             </p>
           </div>
         </CardHeader>
-        <CardContent className="pt-0 px-5 pb-5">
+        <CardContent className="pt-0 px-4 pb-4">
           <form onSubmit={handleSubmit} className="space-y-2.5">
             {error && (
               <Alert variant="destructive" className="py-1.5">
@@ -76,7 +76,7 @@ export function Login({ onLogin }: LoginProps) {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                placeholder="Enter username"
                 className="h-8 text-sm"
                 required
               />
@@ -90,8 +90,8 @@ export function Login({ onLogin }: LoginProps) {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="h-8 pr-9 text-sm"
+                  placeholder="Enter password"
+                  className="h-8 text-sm pr-9"
                   required
                 />
                 <Button
@@ -124,7 +124,7 @@ export function Login({ onLogin }: LoginProps) {
           
           <div className="mt-3 text-center">
             <p className="text-[10px] text-muted-foreground">
-              Demo credentials: admin / admin
+              Demo: admin / admin
             </p>
           </div>
         </CardContent>

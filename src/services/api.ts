@@ -1,7 +1,7 @@
 import axios from 'axios'
 
-// Get API base URL from environment variable or use default production URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://alphaint.teoremaintelligence.com/api'
+// Get API base URL from environment variable or use default
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://api.teoremaintelligence.com/api'
 
 // Create axios instance with base configuration
 const api = axios.create({
